@@ -1,0 +1,324 @@
+@import "tailwindcss";
+@import "@fontsource-variable/figtree";
+@import "@fontsource-variable/bricolage-grotesque";
+
+/* ---------------------------------------------------------------- tokens
+   Graphite neutrals tinted toward the brand ink (hue 280), one coral accent.
+   Dark is the primary theme; light mirrors every role. */
+:root,
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: oklch(0.165 0.012 280);
+  --surface: oklch(0.2 0.013 280);
+  --surface-2: oklch(0.225 0.014 280);
+  --raised: oklch(0.245 0.014 280);
+  --hover: oklch(0.29 0.015 280);
+  --active: oklch(0.33 0.016 280);
+  --border: oklch(0.3 0.014 280);
+  --border-strong: oklch(0.38 0.016 280);
+  --text: oklch(0.96 0.005 280);
+  --text-muted: oklch(0.76 0.012 280);
+  --text-faint: oklch(0.62 0.012 280);
+  --accent: oklch(0.69 0.19 32);
+  --accent-hover: oklch(0.74 0.17 32);
+  --accent-soft: oklch(0.69 0.19 32 / 0.16);
+  --on-accent: oklch(0.2 0.02 280);
+  --accent-text: oklch(0.78 0.15 35);
+  --danger: oklch(0.68 0.2 22);
+  --danger-soft: oklch(0.68 0.2 22 / 0.14);
+  --success: oklch(0.74 0.15 160);
+  --warning: oklch(0.8 0.14 75);
+  --focus: oklch(0.74 0.17 32);
+  --shadow: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 12px 32px -12px oklch(0 0 0 / 0.6), 0 2px 6px oklch(0 0 0 / 0.35);
+  --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.4);
+  --scrim: oklch(0.1 0.01 280 / 0.6);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: oklch(0.972 0.004 280);
+  --surface: oklch(1 0 0);
+  --surface-2: oklch(0.985 0.003 280);
+  --raised: oklch(1 0 0);
+  --hover: oklch(0.945 0.006 280);
+  --active: oklch(0.915 0.008 280);
+  --border: oklch(0.895 0.008 280);
+  --border-strong: oklch(0.82 0.01 280);
+  --text: oklch(0.22 0.02 280);
+  --text-muted: oklch(0.45 0.016 280);
+  --text-faint: oklch(0.55 0.014 280);
+  --accent: oklch(0.67 0.2 32);
+  --accent-hover: oklch(0.62 0.2 32);
+  --accent-soft: oklch(0.67 0.2 32 / 0.12);
+  --on-accent: oklch(0.18 0.02 280);
+  --accent-text: oklch(0.55 0.2 32);
+  --danger: oklch(0.56 0.21 25);
+  --danger-soft: oklch(0.56 0.21 25 / 0.1);
+  --success: oklch(0.56 0.14 160);
+  --warning: oklch(0.62 0.14 70);
+  --focus: oklch(0.6 0.2 32);
+  --shadow: 0 12px 32px -12px oklch(0.2 0.02 280 / 0.22), 0 2px 6px oklch(0.2 0.02 280 / 0.08);
+  --shadow-sm: 0 1px 2px oklch(0.2 0.02 280 / 0.1);
+  --scrim: oklch(0.2 0.02 280 / 0.35);
+}
+
+@theme inline {
+  --font-sans: "Figtree Variable", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Bricolage Grotesque Variable", "Figtree Variable", system-ui, sans-serif;
+  --color-canvas: var(--canvas-bg);
+  --color-honey: var(--facet-honey);
+  --color-coral: var(--facet-coral);
+  --color-violet: var(--facet-violet);
+  --color-blue: var(--facet-blue);
+  --color-green: var(--facet-green);
+  --font-mono: ui-monospace, "Cascadia Mono", "Consolas", monospace;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-raised: var(--raised);
+  --color-hover: var(--hover);
+  --color-active: var(--active);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text: var(--text);
+  --color-muted: var(--text-muted);
+  --color-faint: var(--text-faint);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-soft: var(--accent-soft);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --text-2xs: 0.6875rem;
+  --text-xs: 0.75rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 0.9375rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.375rem;
+  --text-2xl: 1.75rem;
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+  --radius-xl: 14px;
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+/* brand facets (from the Envol logo) */
+:root {
+  --facet-honey: #f5ae39;
+  --facet-coral: #f76046;
+  --facet-violet: #8e5be8;
+  --facet-blue: #567bf7;
+  --facet-green: #2fb27e;
+  --dot: oklch(0.32 0.014 280);
+  --canvas-bg: oklch(0.145 0.012 280);
+}
+:root[data-theme="light"] {
+  --dot: oklch(0.86 0.008 280);
+  --canvas-bg: oklch(0.955 0.005 280);
+}
+
+/* z-index scale */
+:root {
+  --z-dropdown: 20;
+  --z-sticky: 30;
+  --z-overlay: 40;
+  --z-modal: 50;
+  --z-toast: 60;
+  --z-tooltip: 70;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  font-weight: 450;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable] {
+  user-select: text;
+}
+
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Expressive display type for page titles and brand moments only */
+.font-display {
+  font-family: var(--font-display);
+  font-variation-settings: "opsz" 48, "wdth" 92;
+  letter-spacing: -0.025em;
+  font-weight: 650;
+}
+
+/* Dotted "canvas paper" texture behind content areas */
+.dot-grid {
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(circle at 1px 1px, var(--dot) 1px, transparent 0);
+  background-size: 22px 22px;
+}
+
+/* Floating paper island */
+.island {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+}
+
+/* Folded paper corner in a facet colour (set --fold on the element) */
+.fold {
+  position: relative;
+}
+.fold::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(225deg, var(--canvas-bg) 0 50%, color-mix(in oklch, var(--fold, var(--accent)) 80%, black) 50% 100%);
+  border-bottom-left-radius: 6px;
+  box-shadow: -2px 2px 4px oklch(0 0 0 / 0.18);
+  transition: width 180ms var(--ease-out-quart), height 180ms var(--ease-out-quart);
+  pointer-events: none;
+}
+.fold:hover::after {
+  width: 30px;
+  height: 30px;
+}
+
+/* Small facet marker used for categories and project colours */
+.facet-dot {
+  width: 10px;
+  height: 10px;
+  clip-path: polygon(0 100%, 50% 0, 100% 100%);
+  background: var(--fold, var(--accent));
+  flex-shrink: 0;
+}
+
+.lift {
+  transition: transform 200ms var(--ease-out-quart), box-shadow 200ms var(--ease-out-quart), border-color 150ms;
+}
+.lift:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+}
+
+:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--accent-soft);
+}
+
+/* thin native-looking scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.kbd {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+@keyframes aven-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes aven-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes aven-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes aven-shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+.anim-pop {
+  animation: aven-pop 180ms var(--ease-out-quart);
+}
+.anim-fade {
+  animation: aven-fade 160ms var(--ease-out-quart);
+}
+.anim-slide {
+  animation: aven-slide-in 200ms var(--ease-out-quart);
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--hover) 50%, var(--surface-2) 75%);
+  background-size: 200% 100%;
+  animation: aven-shimmer 1.4s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+dialog::backdrop {
+  background: var(--scrim);
+}
+
+/* The engine's own right-click menu is replaced by Aven's (features/editor/canvasMenu.tsx). */
+.aven-canvas .excalidraw .context-menu {
+  display: none !important;
+}

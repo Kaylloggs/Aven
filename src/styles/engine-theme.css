@@ -1,0 +1,134 @@
+/* Aven skin for the drawing engine's built-in panels.
+   Panels follow the Aven interface theme; the canvas keeps its own theme. */
+.aven-canvas .excalidraw,
+.aven-canvas .excalidraw.theme--dark {
+  --ui-font: var(--font-sans);
+  --color-primary: var(--accent);
+  --color-primary-darker: var(--accent-hover);
+  --color-primary-darkest: var(--accent-hover);
+  --color-primary-hover: var(--accent-hover);
+  --color-primary-light: var(--accent-soft);
+  --color-primary-light-darker: var(--accent-soft);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-active: var(--accent);
+  --color-surface-primary-container: var(--accent-soft);
+  --color-on-primary-container: var(--text);
+  --island-bg-color: var(--surface);
+  --popup-bg-color: var(--raised);
+  --default-bg-color: var(--surface);
+  --sidebar-bg-color: var(--surface);
+  --sidebar-border-color: var(--border);
+  --sidebar-shadow: var(--shadow);
+  --input-bg-color: var(--surface-2);
+  --input-hover-bg-color: var(--hover);
+  --input-border-color: var(--border);
+  --input-label-color: var(--text-muted);
+  --default-border-color: var(--border);
+  --dialog-border-color: var(--border);
+  --list-border-color: var(--border);
+  --button-gray-1: var(--hover);
+  --button-gray-2: var(--surface-2);
+  --button-gray-3: var(--active);
+  --button-hover-bg: var(--hover);
+  --button-active-bg: var(--accent-soft);
+  --color-surface-high: var(--hover);
+  --color-surface-mid: var(--surface-2);
+  --color-surface-low: var(--surface);
+  --color-surface-lowest: var(--surface);
+  --color-on-surface: var(--text);
+  --color-border-outline: var(--border-strong);
+  --color-border-outline-variant: var(--border);
+  --color-muted: var(--text-faint);
+  --color-muted-darker: var(--text-muted);
+  --color-muted-darkest: var(--text);
+  --color-muted-background: var(--hover);
+  --color-muted-background-darker: var(--active);
+  --text-primary-color: var(--text);
+  --icon-fill-color: var(--text);
+  --keybinding-color: var(--text-faint);
+  --popup-text-color: var(--text);
+  --popup-secondary-bg-color: var(--surface-2);
+  --overlay-bg-color: var(--scrim);
+  --shadow-island: var(--shadow);
+  --modal-shadow: var(--shadow);
+  --focus-highlight-color: var(--accent-soft);
+  --select-highlight-color: var(--accent);
+  --link-color: var(--accent-text);
+  --border-radius-md: 8px;
+  --border-radius-lg: 10px;
+  --color-slider-track: var(--active);
+  --color-slider-thumb: var(--accent);
+  font-family: var(--font-sans);
+}
+
+/* Aven provides its own tool rail, top bar, menu, undo/redo and help. */
+.aven-canvas .excalidraw .App-toolbar-container,
+.aven-canvas .excalidraw .App-toolbar,
+.aven-canvas .excalidraw .main-menu-trigger,
+.aven-canvas .excalidraw .help-icon,
+.aven-canvas .excalidraw .undo-redo-buttons,
+.aven-canvas .excalidraw .default-sidebar-trigger,
+.aven-canvas .excalidraw .sidebar-trigger,
+.aven-canvas .excalidraw .App-toolbar__divider,
+.aven-canvas .excalidraw .HintViewer,
+.aven-canvas .excalidraw .mobile-misc-tools-container {
+  display: none !important;
+}
+
+.aven-canvas .excalidraw .Island {
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.aven-canvas .excalidraw .App-menu_top {
+  padding-top: 4px;
+}
+.aven-canvas .excalidraw .ToolIcon__icon,
+.aven-canvas .excalidraw .ToolIcon_type_button {
+  border-radius: 6px;
+}
+.aven-canvas .excalidraw .zoom-actions .ToolIcon__icon,
+.aven-canvas .excalidraw .zoom-actions button {
+  color: var(--text);
+}
+.aven-canvas .excalidraw .Modal__content,
+.aven-canvas .excalidraw .Dialog .Island {
+  background: var(--surface);
+  color: var(--text);
+}
+
+[data-drop="true"] {
+  outline: 2px dashed var(--accent);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+
+:root[data-density="compact"] body {
+  font-size: 0.8125rem;
+}
+
+/* Make room for Aven's floating chrome (tool rail on the left, bars on top). */
+.aven-canvas .excalidraw .FixedSideContainer_side_top {
+  left: 76px;
+  top: 68px;
+}
+.aven-canvas .excalidraw .App-menu_bottom,
+.aven-canvas .excalidraw .layer-ui__wrapper__footer {
+  padding-left: 64px;
+}
+.aven-canvas .excalidraw .Island {
+  border-radius: 14px;
+}
+
+/* "Dots" canvas: the app's dotted texture shows through a transparent engine background
+   and follows pan/zoom via --dot-step / --dot-x / --dot-y set by the editor. */
+.aven-canvas.canvas-dots {
+  background-color: var(--canvas-bg);
+  background-image: radial-gradient(circle at 1px 1px, var(--dot) 1.1px, transparent 0);
+  background-size: var(--dot-step, 22px) var(--dot-step, 22px);
+  background-position: var(--dot-x, 0) var(--dot-y, 0);
+}
+.aven-canvas.canvas-dots .excalidraw,
+.aven-canvas.canvas-dots .excalidraw.theme--dark {
+  --default-bg-color: transparent;
+  background: transparent;
+}

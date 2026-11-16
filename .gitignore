@@ -1,0 +1,9 @@
+node_modules
+dist
+public/fonts
+src-tauri/target
+src-tauri/gen
+*.log
+.DS_Store
+.build.log
+.claude/launch.json

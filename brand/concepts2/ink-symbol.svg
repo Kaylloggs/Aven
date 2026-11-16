@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256"><title>Aven</title>
+<defs><linearGradient id="g" x1="0" y1="1" x2="1" y2="0">
+  <stop offset="0" stop-color="#567BF7"/><stop offset="0.55" stop-color="#F76046"/><stop offset="1" stop-color="#F5AE39"/>
+</linearGradient></defs>
+<path d="M46 222 L124 44 Q128 36 132 44 L196 196 C206 222 172 232 150 214 C126 194 132 160 170 160 C190 160 206 170 214 180" fill="none" stroke="url(#g)" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/></svg>

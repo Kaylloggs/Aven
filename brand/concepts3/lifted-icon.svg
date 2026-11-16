@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><title>Aven</title>
+<rect x="64" y="64" width="896" height="896" rx="208" fill="#191A24"/>
+<g transform="translate(192 192) scale(2.5)">
+<defs><linearGradient id="flap" x1="1" y1="0" x2="0" y2="1">
+  <stop offset="0" stop-color="#F76046"/><stop offset="1" stop-color="#8E5BE8"/></linearGradient></defs>
+<path d="M54 24 H202 A30 30 0 0 1 232 54 V146 L146 232 H54 A30 30 0 0 1 24 202 V54 A30 30 0 0 1 54 24 Z" fill="#FBFAF8"/>
+<path d="M232 146 L146 232 L146 146 Z" fill="url(#flap)"/>
+<path d="M60 128 C80 70 116 66 124 98 C132 128 150 122 172 62" fill="none" stroke="#F5AE39" stroke-width="20" stroke-linecap="round"/>
+<circle cx="60" cy="128" r="16" fill="#567BF7"/></g></svg>
