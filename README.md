@@ -93,7 +93,7 @@ The interface follows your Windows theme or your choice, with an accent colour o
 
 ## Install
 
-1. Download `Aven_1.2.1_x64-setup.exe` from the [Releases page](https://github.com/Kaylloggs/Aven/releases) when a release is published, or build it yourself (see below).
+1. Download [`Aven_1.2.1_x64-setup.exe`](https://github.com/Kaylloggs/Aven/releases/latest) from the latest release, or build it yourself (see below).
 2. Aven installs per user (no admin rights) into `%LOCALAPPDATA%\Aven` and adds a Start menu entry. WebView2 is installed automatically if missing (it ships with Windows 10 and 11).
 3. On first launch, choose where your workspace folder lives (default `Documents\Aven\My workspace`).
 
