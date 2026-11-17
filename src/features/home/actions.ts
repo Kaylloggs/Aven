@@ -23,7 +23,7 @@ import { PROJECT_COLORS } from "@/components/ui";
 import { api, pickSavePath, revealInExplorer } from "@/platform/api";
 import type { FolderNode, ProjectNode } from "@/platform/types";
 import { inboxPath, useWorkspace, type DrawingRef } from "@/store/workspace";
-import { askConfirm, askText, openBoard, openDrawing, toast, useUI } from "@/store/ui";
+import { askConfirm, askText, openBoard, openDrawing, openNote, toast, useUI } from "@/store/ui";
 import { boardToMarkdown, parseBoard } from "@/engine/board";
 import { templateFromDrawing } from "@/features/templates/templateActions";
 import { errorMessage } from "@/lib/utils";
@@ -108,6 +108,27 @@ export function boardMenu(d: DrawingRef): MenuItem[] {
         }
       },
     },
+    { label: "Show in File Explorer", icon: icon(FolderOpen), onSelect: () => void revealInExplorer(d.path) },
+    "separator",
+    { label: "Move to trash", icon: icon(Trash2), danger: true, onSelect: () => void ws.trash(d.path, d.title) },
+  ];
+}
+
+export function noteMenu(d: DrawingRef): MenuItem[] {
+  const ws = useWorkspace.getState();
+  return [
+    { label: "Open", icon: icon(ExternalLink), onSelect: () => openNote(d.path) },
+    {
+      label: "Rename…",
+      icon: icon(Pencil),
+      onSelect: async () => {
+        const name = await askText({ title: "Rename note", initial: d.title, confirmLabel: "Rename" });
+        if (name && name !== d.title) await ws.rename(d.path, name);
+      },
+    },
+    { label: "Duplicate", icon: icon(Copy), onSelect: () => void ws.duplicate(d.path) },
+    { label: "Move to", icon: icon(FolderInput), submenu: moveTargetsFor(d.path) },
+    "separator",
     { label: "Show in File Explorer", icon: icon(FolderOpen), onSelect: () => void revealInExplorer(d.path) },
     "separator",
     { label: "Move to trash", icon: icon(Trash2), danger: true, onSelect: () => void ws.trash(d.path, d.title) },

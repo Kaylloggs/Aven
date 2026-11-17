@@ -12,12 +12,14 @@ import { GlobalOverlays } from "@/features/overlays/GlobalOverlays";
 import { useGlobalShortcuts } from "@/features/shortcuts/useGlobalShortcuts";
 import { useEditor } from "@/features/editor/session";
 import { useBoard } from "@/features/board/boardStore";
+import { useNote } from "@/features/notes/noteStore";
 import { api, isDesktop } from "@/platform/api";
 import { runMaintenance } from "@/features/maintenance";
 import { installContextMenu } from "@/features/contextMenu";
 
 const EditorScreen = lazy(() => import("@/features/editor/EditorScreen"));
 const BoardScreen = lazy(() => import("@/features/board/BoardScreen"));
+const NoteScreen = lazy(() => import("@/features/notes/NoteScreen"));
 
 function Splash() {
   return (
@@ -74,6 +76,12 @@ export function App() {
       unlisten = await win.onCloseRequested(async (e) => {
         const s = useEditor.getState();
         const b = useBoard.getState();
+        const n = useNote.getState();
+        if (n.path && n.saveState !== "saved") {
+          e.preventDefault();
+          await Promise.race([n.flush(), new Promise((r) => setTimeout(r, 4000))]);
+          if (!(s.session && s.saveState !== "saved") && !(b.board && b.saveState !== "saved")) return void (await win.destroy());
+        }
         if (b.board && b.saveState !== "saved") {
           e.preventDefault();
           await Promise.race([b.flush(), new Promise((r) => setTimeout(r, 4000))]);
@@ -105,6 +113,10 @@ export function App() {
       ) : route.name === "board" ? (
         <Suspense fallback={<Splash />}>
           <BoardScreen key={route.openId} path={route.path} />
+        </Suspense>
+      ) : route.name === "note" ? (
+        <Suspense fallback={<Splash />}>
+          <NoteScreen key={route.openId} path={route.path} />
         </Suspense>
       ) : route.name === "settings" ? (
         <SettingsScreen />

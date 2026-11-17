@@ -178,6 +178,7 @@ export function Segmented<T extends string>({
           type="button"
           role="radio"
           aria-checked={value === o.value}
+          aria-label={typeof o.label === "string" ? undefined : o.title}
           title={o.title}
           onClick={() => onChange(o.value)}
           className={cx(

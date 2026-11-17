@@ -21,22 +21,24 @@ import {
   Inbox,
   Archive,
   FileText,
+  Plus,
   Kanban,
+  NotebookText,
 } from "lucide-react";
 import { Button, EmptyState, IconButton, Input, PROJECT_COLORS, Segmented, Select } from "@/components/ui";
 import { openContextMenu, openMenuAt } from "@/components/Menu";
 import { api, pickFile, pickFolder } from "@/platform/api";
 import type { ProjectNode } from "@/platform/types";
-import { allBoards, allDrawings, countDrawings, findFolder, flattenBoards, flattenFolder, inboxPath, useWorkspace, type DrawingRef } from "@/store/workspace";
+import { allBoards, allDrawings, allNotes, countDrawings, findFolder, flattenBoards, flattenFolder, flattenNotes, inboxPath, useWorkspace, type DrawingRef } from "@/store/workspace";
 import { useSettings } from "@/store/settings";
 import { askConfirm, askText, toast, useUI } from "@/store/ui";
-import { newBoard, newDrawing, newProject } from "@/features/commands";
+import { newDrawing, newMenuItems, newProject } from "@/features/commands";
 import { parseDocument, serializeDocument } from "@/engine/format";
 import { cx, errorMessage, formatDate, timeAgo } from "@/lib/utils";
 import { basename, join, stem } from "@/lib/path";
 import { Sidebar } from "./Sidebar";
 import { FacetArt } from "@/components/FacetArt";
-import { BoardCard, DrawingCard, DrawingTable, FolderCard, Thumbnail } from "./DrawingCard";
+import { BoardCard, DrawingCard, DrawingTable, FolderCard, NoteCard, Thumbnail } from "./DrawingCard";
 import { projectMenu } from "./actions";
 import { dropProps } from "./dnd";
 import { KnowledgeMap } from "./KnowledgeMap";
@@ -188,14 +190,11 @@ async function importProject() {
 
 function CreateTiles({ dir, large }: { dir: string; large?: boolean }) {
   const tiles = [
-    { art: "blank" as const, fold: "var(--facet-coral)", title: "Blank canvas", body: "Shapes, arrows, text and images on an infinite canvas.", run: (_el: HTMLElement) => void newDrawing(dir) },
     { art: "template" as const, fold: "var(--facet-blue)", title: "From a template", body: "40 editable starts: mind maps, roadmaps, wireframes and more.", run: (_el: HTMLElement) => useUI.getState().setOverlay({ kind: "templates", targetDir: dir }) },
-    { art: "board" as const, fold: "var(--facet-green)", title: "Kanban board", body: "Columns and cards for tasks, sprints and content plans.", run: (el: HTMLElement) => void newBoard(dir, el) },
-    { art: "project" as const, fold: "var(--facet-violet)", title: "New project", body: "Drawings, boards, folders and assets kept together.", run: () => void newProject() },
-    { art: "import" as const, fold: "var(--facet-honey)", title: "Import", body: "Open .aven or .excalidraw files.", run: (_el: HTMLElement) => void importDrawings(dir) },
+    { art: "project" as const, fold: "var(--facet-violet)", title: "New project", body: "Whiteboards, boards, notes and folders kept together.", run: (_el: HTMLElement) => void newProject() },
   ];
   return (
-    <div className={cx("grid gap-4", large ? "md:grid-cols-3 xl:grid-cols-5" : "mb-10 grid-cols-2 lg:grid-cols-3 xl:grid-cols-5")}>
+    <div className={cx("grid gap-4 sm:grid-cols-2", large ? "mx-auto max-w-3xl" : "mb-10")}>
       {tiles.map((c) => (
         <button
           key={c.title}
@@ -228,6 +227,7 @@ function Dashboard() {
   }, [drawings, recents]);
   const favorites = drawings.filter((d) => tree.state.favorites?.includes(d.id));
   const boards = useMemo(() => allBoards(tree).sort((a, b) => b.updated - a.updated), [tree]);
+  const notes = useMemo(() => allNotes(tree).sort((a, b) => b.updated - a.updated), [tree]);
   const pinned = tree.projects.filter((p) => p.meta.pinned);
   const [projSort, setProjSort] = useState<"updated" | "name" | "created">("updated");
   const projects = useMemo(() => {
@@ -238,7 +238,7 @@ function Dashboard() {
     else l.sort((a, b) => last(b) - last(a));
     return l;
   }, [tree, projSort]);
-  const empty = !drawings.length && !tree.projects.length && !boards.length;
+  const empty = !drawings.length && !tree.projects.length && !boards.length && !notes.length;
 
   return (
     <Page
@@ -253,11 +253,23 @@ function Dashboard() {
       }
       actions={
         <>
-          <Button icon={<Upload className="size-4" />} onClick={() => void importProject()}>
-            Import project
+          <Button
+            icon={<Upload className="size-4" />}
+            onClick={(e) =>
+              openMenuAt(
+                e.currentTarget,
+                [
+                  { label: "Whiteboards…", hint: ".aven, .excalidraw", onSelect: () => void importDrawings(inboxPath(tree)) },
+                  { label: "Project…", hint: ".avenproject", onSelect: () => void importProject() },
+                ],
+                "end",
+              )
+            }
+          >
+            Import
           </Button>
-          <Button variant="primary" icon={<FilePlus2 className="size-4" />} onClick={() => void newDrawing(inboxPath(tree))}>
-            New drawing
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={(e) => openMenuAt(e.currentTarget, newMenuItems(inboxPath(tree)), "end")}>
+            New
           </Button>
         </>
       }
@@ -308,6 +320,16 @@ function Dashboard() {
               <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
                 {boards.slice(0, 6).map((b) => (
                   <BoardCard key={b.path} d={b} />
+                ))}
+              </div>
+            </section>
+          )}
+          {notes.length > 0 && (
+            <section>
+              <h2 className="font-display mb-3 text-lg">Notes</h2>
+              <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+                {notes.slice(0, 6).map((n) => (
+                  <NoteCard key={n.path} d={n} />
                 ))}
               </div>
             </section>
@@ -412,11 +434,8 @@ function ProjectView({ projectPath, folderPath }: { projectPath: string; folderP
           <Button icon={<LayoutTemplate className="size-4" />} onClick={() => useUI.getState().setOverlay({ kind: "templates", targetDir: folder.path })}>
             From template
           </Button>
-          <Button icon={<Kanban className="size-4" />} onClick={(e) => void newBoard(folder.path, e.currentTarget)}>
-            New board
-          </Button>
-          <Button variant="primary" icon={<FilePlus2 className="size-4" />} onClick={() => void newDrawing(folder.path)}>
-            New drawing
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={(e) => openMenuAt(e.currentTarget, newMenuItems(folder.path), "end")}>
+            New
           </Button>
         </>
       }
@@ -437,6 +456,16 @@ function ProjectView({ projectPath, folderPath }: { projectPath: string; folderP
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
             {folder.boards.map((b) => (
               <BoardCard key={b.path} d={{ ...b, project, folderPath: folder.path }} showProject={false} />
+            ))}
+          </div>
+        </section>
+      )}
+      {folder.notes.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-display mb-3 text-lg">Notes</h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+            {folder.notes.map((n) => (
+              <NoteCard key={n.path} d={{ ...n, project, folderPath: folder.path }} showProject={false} />
             ))}
           </div>
         </section>
@@ -462,11 +491,11 @@ function ProjectView({ projectPath, folderPath }: { projectPath: string; folderP
           <EmptyState
             icon={<FilePlus2 className="size-5" />}
             title={countDrawings(folder) ? "No drawings directly in this folder" : "This project is empty"}
-            body="Create a drawing, start from a template, or drag drawings here from elsewhere."
+            body="Create a whiteboard, board or note with New, start from a template, or drag files here."
             action={
               <>
                 <Button variant="primary" onClick={() => void newDrawing(folder.path)}>
-                  New drawing
+                  New whiteboard
                 </Button>
                 <Button onClick={() => useUI.getState().setOverlay({ kind: "templates", targetDir: folder.path })}>From template</Button>
               </>
@@ -540,8 +569,8 @@ function InboxView() {
           <Button icon={<Upload className="size-4" />} onClick={() => void importDrawings(inboxPath(tree))}>
             Import
           </Button>
-          <Button variant="primary" icon={<FilePlus2 className="size-4" />} onClick={() => void newDrawing(inboxPath(tree))}>
-            New drawing
+          <Button variant="primary" icon={<Plus className="size-4" />} onClick={(e) => openMenuAt(e.currentTarget, newMenuItems(inboxPath(tree)), "end")}>
+            New
           </Button>
         </>
       }
@@ -552,6 +581,16 @@ function InboxView() {
           <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
             {flattenBoards(tree.inbox, null).map((b) => (
               <BoardCard key={b.path} d={b} showProject={false} />
+            ))}
+          </div>
+        </section>
+      )}
+      {tree.inbox.notes.length > 0 && (
+        <section className="mb-8">
+          <h2 className="font-display mb-3 text-lg">Notes</h2>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-3">
+            {flattenNotes(tree.inbox, null).map((n) => (
+              <NoteCard key={n.path} d={n} showProject={false} />
             ))}
           </div>
         </section>
@@ -631,7 +670,7 @@ function TrashView() {
         <div className="overflow-hidden rounded-xl border border-border bg-surface">
           {tree.trash.map((t) => (
             <div key={t.id} className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0">
-              {t.kind === "drawing" ? <FileText className="size-4 text-faint" /> : <FolderOpen className="size-4 text-faint" />}
+              {t.kind === "drawing" ? <FileText className="size-4 text-faint" /> : t.kind === "board" ? <Kanban className="size-4 text-faint" /> : t.kind === "note" ? <NotebookText className="size-4 text-faint" /> : <FolderOpen className="size-4 text-faint" />}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-sm">{t.name.replace(/\.aven$/i, "")}</span>
                 <span className="block truncate text-xs text-faint">

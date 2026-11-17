@@ -7,6 +7,7 @@ export type Route =
   | { name: "home"; section: HomeSection; projectPath?: string; folderPath?: string }
   | { name: "editor"; path: string; openId: number }
   | { name: "board"; path: string; openId: number }
+  | { name: "note"; path: string; openId: number }
   | { name: "settings"; tab?: string };
 
 export interface Toast {
@@ -84,6 +85,19 @@ let openCounter = 1;
 /** Open a drawing in the editor. */
 export function openDrawing(path: string) {
   useUI.getState().navigate({ name: "editor", path, openId: openCounter++ });
+}
+
+/** Open a Markdown note. */
+export function openNote(path: string) {
+  useUI.getState().navigate({ name: "note", path, openId: openCounter++ });
+}
+
+/** Open any Aven document with the right screen. */
+export function openDocument(path: string) {
+  const p = path.toLowerCase();
+  if (p.endsWith(".avenboard")) openBoard(path);
+  else if (p.endsWith(".md")) openNote(path);
+  else openDrawing(path);
 }
 
 /** Open a Kanban board. */

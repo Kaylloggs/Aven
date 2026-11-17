@@ -17,11 +17,18 @@ export interface BoardCard {
   labels: string[]; // label ids
   due: string | null; // YYYY-MM-DD
   checklist: ChecklistItem[];
-  /** linked drawings (by drawing id) */
-  links: { id: string; title: string }[];
+  /** linked whiteboards, boards and notes (by id; notes also by path) */
+  links: CardLink[];
   color: string | null;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface CardLink {
+  id: string;
+  title: string;
+  kind?: "drawing" | "board" | "note";
+  path?: string;
 }
 
 export interface BoardColumn {
@@ -283,7 +290,7 @@ export function boardToMarkdown(b: BoardDoc, opts: { obsidianKanban?: boolean } 
       out.push(`- [${doneCols.has(col.id) || allDone ? "x" : " "}] ${c.title}${due}${tags.length ? ` ${tags.join(" ")}` : ""}`);
       if (c.description.trim()) for (const line of c.description.trim().split(/\r?\n/)) out.push(`\t${line}`);
       for (const i of c.checklist) out.push(`\t- [${i.done ? "x" : " "}] ${i.text}`);
-      for (const l of c.links) out.push(`\t- Drawing: ${l.title}`);
+      for (const l of c.links) out.push(`\t- ${l.kind === "board" ? "Board" : l.kind === "note" ? "Note" : "Whiteboard"}: ${l.kind === "note" ? `[[${l.title}]]` : l.title}`);
     }
     out.push("");
   }

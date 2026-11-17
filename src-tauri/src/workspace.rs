@@ -22,6 +22,8 @@ pub const WORKSPACE_FILE: &str = "aven-workspace.json";
 pub const PROJECT_FILE: &str = ".aven-project.json";
 pub const DRAWING_EXT: &str = "aven";
 pub const BOARD_EXT: &str = "avenboard";
+/// Notes are plain Markdown files, readable by Obsidian, Notion and any editor.
+pub const NOTE_EXT: &str = "md";
 pub const DIRS: [&str; 5] = ["Projects", "Drawings", "Templates", "Libraries", "Archives"];
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -74,6 +76,8 @@ pub struct FolderNode {
     pub drawings: Vec<DrawingEntry>,
     /// Kanban boards (`*.avenboard`), listed with the same header fields as drawings
     pub boards: Vec<DrawingEntry>,
+    /// Markdown notes (`*.md`): title is the file name, id is derived from the path
+    pub notes: Vec<DrawingEntry>,
     pub assets: Vec<FileEntry>,
 }
 
@@ -190,7 +194,32 @@ fn is_board(p: &Path) -> bool {
     p.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case(BOARD_EXT)).unwrap_or(false)
 }
 
-/// Any Aven document with its own identity (drawing or board).
+pub fn is_note(p: &Path) -> bool {
+    p.extension().and_then(|e| e.to_str()).map(|e| e.eq_ignore_ascii_case(NOTE_EXT)).unwrap_or(false)
+}
+
+/// A note is listed without reading it: Markdown has no header to parse.
+fn note_entry(path: &Path, meta: &fs::Metadata) -> DrawingEntry {
+    let key = path.to_string_lossy().to_string();
+    let mtime = mtime_ms(meta);
+    let created = meta
+        .created()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_millis() as i64)
+        .unwrap_or(mtime);
+    DrawingEntry {
+        id: format!("path:{key}"),
+        title: path.file_stem().map(|s| s.to_string_lossy().to_string()).unwrap_or_default(),
+        path: key,
+        size: meta.len(),
+        modified: mtime,
+        created: created.min(mtime),
+        updated: mtime,
+    }
+}
+
+/// Any Aven JSON document with its own identity (drawing or board).
 fn is_document(p: &Path) -> bool {
     is_drawing(p) || is_board(p)
 }
@@ -198,7 +227,7 @@ fn is_document(p: &Path) -> bool {
 fn is_asset(p: &Path) -> bool {
     matches!(
         p.extension().and_then(|e| e.to_str()).map(|e| e.to_ascii_lowercase()).as_deref(),
-        Some("png" | "jpg" | "jpeg" | "svg" | "webp" | "gif" | "pdf" | "md")
+        Some("png" | "jpg" | "jpeg" | "svg" | "webp" | "gif" | "pdf")
     )
 }
 
@@ -241,6 +270,7 @@ pub fn scan_folder(db: Option<&Db>, dir: &Path, depth: usize) -> FolderNode {
         folders: vec![],
         drawings: vec![],
         boards: vec![],
+        notes: vec![],
         assets: vec![],
     };
     let Ok(entries) = fs::read_dir(dir) else { return node };
@@ -262,6 +292,10 @@ pub fn scan_folder(db: Option<&Db>, dir: &Path, depth: usize) -> FolderNode {
             if let Some(d) = read_drawing_entry(db, &p) {
                 node.boards.push(d);
             }
+        } else if is_note(&p) {
+            if let Ok(m) = e.metadata() {
+                node.notes.push(note_entry(&p, &m));
+            }
         } else if is_asset(&p) {
             if let Ok(m) = e.metadata() {
                 node.assets.push(FileEntry { name, path: p.to_string_lossy().to_string(), size: m.len(), modified: mtime_ms(&m) });
@@ -271,6 +305,7 @@ pub fn scan_folder(db: Option<&Db>, dir: &Path, depth: usize) -> FolderNode {
     node.folders.sort_by_key(|f| f.name.to_lowercase());
     node.drawings.sort_by(|a, b| b.updated.cmp(&a.updated));
     node.boards.sort_by(|a, b| b.updated.cmp(&a.updated));
+    node.notes.sort_by(|a, b| b.updated.cmp(&a.updated));
     node
 }
 
@@ -499,6 +534,8 @@ pub fn trash_item(root: &Path, path: &Path) -> AppResult<TrashEntry> {
         if path.join(PROJECT_FILE).exists() { "project" } else { "folder" }
     } else if is_board(path) {
         "board"
+    } else if is_note(path) {
+        "note"
     } else {
         "drawing"
     };
@@ -577,6 +614,10 @@ pub struct WriteResult {
 
 pub fn read_drawing(path: &Path) -> AppResult<String> {
     let text = fs::read_to_string(path)?;
+    // Notes are free Markdown text: any content (including an empty new note) is valid.
+    if is_note(path) {
+        return Ok(text);
+    }
     match serde_json::from_str::<Value>(&text) {
         Ok(v) if v.is_object() => Ok(text),
         Ok(_) => Err(AppError::Corrupt(format!("{} is not an Aven drawing.", path.display()))),
@@ -601,7 +642,8 @@ pub fn maybe_backup(root: &Path, drawing_id: &str, path: &Path, policy: &BackupP
     let mut created = false;
     if now_ms() - newest >= policy.min_interval_sec * 1000 {
         let stamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S-%3f");
-        fs::copy(path, dir.join(format!("{stamp}.{DRAWING_EXT}")))?;
+        let ext = path.extension().map(|e| e.to_string_lossy().to_string()).unwrap_or_else(|| DRAWING_EXT.into());
+        fs::copy(path, dir.join(format!("{stamp}.{ext}")))?;
         created = true;
         existing = list_backups(root, drawing_id);
     }
@@ -639,8 +681,11 @@ pub fn write_drawing(
     policy: &BackupPolicy,
     expected_modified: Option<i64>,
 ) -> AppResult<WriteResult> {
-    // Refuse to write something that is not valid JSON: never replace good data with bad.
-    serde_json::from_str::<Value>(content).map_err(|e| AppError::Invalid(format!("Refusing to save invalid data: {e}")))?;
+    // Refuse to write a drawing or board that is not valid JSON: never replace good data with bad.
+    // Notes are free Markdown text.
+    if !is_note(path) {
+        serde_json::from_str::<Value>(content).map_err(|e| AppError::Invalid(format!("Refusing to save invalid data: {e}")))?;
+    }
     if let (Some(expected), Ok(meta)) = (expected_modified, fs::metadata(path)) {
         let current = mtime_ms(&meta);
         if (current - expected).abs() > 1500 {
@@ -700,6 +745,33 @@ mod tests {
         // cached second scan gives identical results
         let tree2 = scan_workspace(Some(&db), &info).unwrap();
         assert_eq!(tree2.projects[0].root.folders[0].drawings[0].id, "a1");
+    }
+
+    #[test]
+    fn notes_are_markdown_files_listed_saved_and_trashed() {
+        let (_d, root) = ws();
+        let (proj, _) = create_project(&root, "P", None).unwrap();
+        fs::write(proj.join("Meeting notes.md"), "# Meeting\n\n- [ ] Follow up").unwrap();
+        let info = init_workspace_dir(&root, "x").unwrap();
+        let tree = scan_workspace(None, &info).unwrap();
+        let note = &tree.projects[0].root.notes[0];
+        assert_eq!(note.title, "Meeting notes");
+        assert!(tree.projects[0].root.assets.is_empty(), "notes are no longer listed as assets");
+        let policy = BackupPolicy { enabled: true, min_interval_sec: 0, keep: 5 };
+        let p = proj.join("Meeting notes.md");
+        write_drawing(Some(&root), &p, "# Meeting\n\nPlain *Markdown*, not JSON", "note-1", &policy, None).unwrap();
+        assert_eq!(fs::read_to_string(&p).unwrap(), "# Meeting\n\nPlain *Markdown*, not JSON");
+        assert!(list_backups(&root, "note-1")[0].name.ends_with(".md"));
+        // drawings still refuse invalid JSON
+        assert!(write_drawing(None, &proj.join("x.aven"), "not json", "d", &policy, None).is_err());
+        assert_eq!(read_drawing(&p).unwrap(), "# Meeting\n\nPlain *Markdown*, not JSON");
+        // a brand-new note is an empty file and must open
+        fs::write(proj.join("Untitled note.md"), "").unwrap();
+        assert_eq!(read_drawing(&proj.join("Untitled note.md")).unwrap(), "");
+        let copy = duplicate(&p).unwrap();
+        assert!(copy.ends_with("Meeting notes copy.md"));
+        assert_eq!(fs::read_to_string(&copy).unwrap(), fs::read_to_string(&p).unwrap());
+        assert_eq!(trash_item(&root, &copy).unwrap().kind, "note");
     }
 
     #[test]

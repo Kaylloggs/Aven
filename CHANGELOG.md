@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.3.0 — 2026-11-17
+
+### Added
+- **Notes**: Markdown notes (`.md` files) next to whiteboards and boards, in projects and folders. The editor shows formatting as you write, the way Obsidian's live preview does: headings, bold, italic, strikethrough, lists, clickable to-dos, quotes, code blocks, dividers and links, with the Markdown marks visible only on the line being edited. Type `/` for commands (headings, lists, to-do, quote, code, table, divider, link), `[[` to link a whiteboard, board or note. Files stay plain Markdown, byte for byte, so Obsidian, Notion and any editor read them. Autosave, version history, conflict detection, search (Ctrl+P), trash, copy for Notion and copy to an Obsidian vault.
+- **Links between documents**: a note's `[[Title]]` opens the whiteboard, board or note with that title (or offers to create the note); Kanban cards link to whiteboards, boards and notes.
+- **New menu**: one "New" button creates a whiteboard, a Kanban board or a note; "Import" groups whiteboard and project imports.
+
+### Changed
+- **Simpler charts and tables**: data is edited in a small spreadsheet (label and value per row, a real grid for tables) instead of free text. Enter adds a row, arrows move between rows, cells pasted from a spreadsheet fill several rows. Unit, values and colour palettes moved to the chart's "…" menu.
+- **Leaner whiteboard**: the tool rail goes from 19 buttons to 7. Shapes, arrows and lines, and drawing tools each share one button that remembers the last one used (click the active button for its variants); image, frame, diagram from text, charts and gauges sit under one Insert button. The top bar's grid and snap toggles live in the canvas menu, and the style panel no longer repeats the arrange and action buttons; it stays hidden while only a gauge or chart is selected, since their own panel handles them.
+- **Shorter right-click menus**: no icons, the essentials first, rarely used commands under "More".
+- Home: the quick-start tiles keep only "From a template" and "New project".
+- Submenus that would not fit on the right of the window open on the left, instead of covering their own menu.
+
+### Fixed
+- Duplicating (or copy-pasting) a percentage gauge or a chart made the copy share the original's data, so editing one changed or moved the other. Each copy now gets its own identity, and drawings where this already happened are repaired when opened.
+
+
 ## 1.2.1 — 2026-11-16
 
 ### Added

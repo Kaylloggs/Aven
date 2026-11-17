@@ -37,9 +37,13 @@ The hook implementations live in `src/engine/textStyle.ts` and are unit-tested.
 
 `.avenboard` JSON files (`src/engine/board.ts`: columns with ordered card ids, a card map, labels). The backend scans them like drawings (`FolderNode.boards`); they are saved through the same `drawing_write` command (atomic write, version history, conflict detection), indexed for search, and exported to Markdown or the Obsidian Kanban-plugin format. The parser repairs files where a card is missing from every column or listed twice.
 
+## Notes
+
+Notes are plain Markdown files (`*.md`), listed by the backend in `FolderNode.notes` without being read (title = file name, id derived from the path). They are saved through `drawing_write`, which skips the JSON check for `.md` files, so they get the same atomic writes, version history (backups keep the `.md` extension) and conflict detection. The editor is CodeMirror 6 with a live-preview plugin (`features/notes/liveMarkdown.ts`) that only adds decorations: the document text is never rewritten. `[[Title]]` links resolve by title, closest first (same folder, then same project), in `features/notes/links.ts`.
+
 ## Generated content (gauges, charts, diagrams)
 
-Gauges (`engine/gauge.ts`) and charts and tables (`engine/charts.ts`) are groups of ordinary elements tagged in `customData`; the source data lives on one element (gauge track, chart box) and the rest is regenerated from it, also after a resize. Diagrams from text (`features/editor/textDiagram.ts`) use the template Board builder; Mermaid goes through `@excalidraw/mermaid-to-excalidraw`, loaded on demand.
+Gauges (`engine/gauge.ts`) and charts and tables (`engine/charts.ts`) are groups of ordinary elements tagged in `customData`; copies made by duplicating or pasting get their own id from `engine/generated.ts` (told apart by their group) and are laid out again; the source data lives on one element (gauge track, chart box) and the rest is regenerated from it, also after a resize. Diagrams from text (`features/editor/textDiagram.ts`) use the template Board builder; Mermaid goes through `@excalidraw/mermaid-to-excalidraw`, loaded on demand.
 
 ## Process model
 

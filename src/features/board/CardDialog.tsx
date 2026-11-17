@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
-import { CalendarDays, CheckSquare, FileText, Link2, Plus, Tag, Trash2, X } from "lucide-react";
+import { CalendarDays, CheckSquare, FileText, Kanban, Link2, NotebookText, Plus, Tag, Trash2, X } from "lucide-react";
 import { Modal } from "@/components/Overlays";
 import { Button, IconButton, Input, Select, TextArea } from "@/components/ui";
 import { addLabel, checklistProgress, colorName, columnOf, deleteCard, dueStatus, LABEL_COLORS, moveCard, removeLabel, updateCard, updateLabel, type BoardCard, type BoardLabel } from "@/engine/board";
 import { openContextMenu, type MenuItem } from "@/components/Menu";
 import { DrawingPicker } from "@/features/overlays/DrawingPicker";
-import { allDrawings, useWorkspace } from "@/store/workspace";
-import { askConfirm, askText, openDrawing } from "@/store/ui";
+import { useWorkspace } from "@/store/workspace";
+import { findLinked } from "@/features/notes/links";
+import { askConfirm, askText, openDocument } from "@/store/ui";
 import { cx, formatDateTime } from "@/lib/utils";
 import { useBoard } from "./boardStore";
 
@@ -50,7 +51,6 @@ export function CardDialog({ cardId, onClose }: { cardId: string; onClose: () =>
   const col = columnOf(board, cardId);
   const patch = (p: Partial<BoardCard>) => change((b) => updateCard(b, cardId, p));
   const progress = checklistProgress(card);
-  const drawings = allDrawings(tree);
 
   const labelMenu = (l: BoardLabel): MenuItem[] => [
     {
@@ -142,15 +142,16 @@ export function CardDialog({ cardId, onClose }: { cardId: string; onClose: () =>
             </section>
             <section>
               <h3 className="mb-1.5 flex items-center gap-1.5 text-xs font-[650] text-muted">
-                <Link2 className="size-3.5" /> Linked drawings
+                <Link2 className="size-3.5" /> Links
               </h3>
               <ul className="space-y-0.5">
                 {card.links.map((l) => {
-                  const d = drawings.find((x) => x.id === l.id);
+                  const d = findLinked(tree, l);
+                  const kind = d?.kind ?? l.kind ?? "drawing";
                   return (
                     <li key={l.id} className="group flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-hover">
-                      <FileText className="size-3.5 text-faint" />
-                      <button className="flex-1 truncate text-left text-sm cursor-pointer disabled:cursor-default disabled:text-faint" disabled={!d} onClick={async () => { onClose(); await useBoard.getState().flush(); openDrawing(d!.path); }}>
+                      {kind === "board" ? <Kanban className="size-3.5 text-faint" /> : kind === "note" ? <NotebookText className="size-3.5 text-faint" /> : <FileText className="size-3.5 text-faint" />}
+                      <button className="flex-1 truncate text-left text-sm cursor-pointer disabled:cursor-default disabled:text-faint" disabled={!d} onClick={async () => { onClose(); await useBoard.getState().flush(); openDocument(d!.path); }}>
                         {d?.title ?? `${l.title} (missing)`}
                       </button>
                       <IconButton label="Unlink" size="sm" className="opacity-0 group-hover:opacity-100" onClick={() => patch({ links: card.links.filter((x) => x.id !== l.id) })}>
@@ -161,7 +162,7 @@ export function CardDialog({ cardId, onClose }: { cardId: string; onClose: () =>
                 })}
               </ul>
               <Button size="sm" variant="ghost" icon={<Plus className="size-3.5" />} onClick={() => setPicker(true)}>
-                Link a drawing
+                Link a whiteboard, board or note
               </Button>
             </section>
           </div>
@@ -269,11 +270,12 @@ export function CardDialog({ cardId, onClose }: { cardId: string; onClose: () =>
       </div>
       <DrawingPicker
         open={picker}
-        title="Link a drawing to this card"
-        exclude={card.links.map((l) => l.id)}
+        title="Link to this card"
+        kinds={["drawing", "board", "note"]}
+        exclude={[...card.links.map((l) => l.id), useBoard.getState().path]}
         onClose={() => setPicker(false)}
         onPick={(d) => {
-          patch({ links: [...card.links, { id: d.id, title: d.title }] });
+          patch({ links: [...card.links, { id: d.id, title: d.title, kind: d.kind, path: d.path }] });
           setPicker(false);
         }}
       />

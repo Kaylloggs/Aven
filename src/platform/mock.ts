@@ -98,7 +98,7 @@ function header(p: string) {
   }
 }
 function scanFolder(p: string): any {
-  const node = { name: basename(p), path: p, folders: [] as any[], drawings: [] as any[], boards: [] as any[], assets: [] as any[] };
+  const node = { name: basename(p), path: p, folders: [] as any[], drawings: [] as any[], boards: [] as any[], notes: [] as any[], assets: [] as any[] };
   for (const c of children(p)) {
     if (basename(c).startsWith(".")) continue;
     const n = fs.get(c)!;
@@ -106,11 +106,14 @@ function scanFolder(p: string): any {
     else if (extname(c) === "aven" || extname(c) === "avenboard") {
       const h = header(c);
       (extname(c) === "aven" ? node.drawings : node.boards).push({ ...h, path: c, size: (n as any).content.length, modified: n.mtime });
-    } else if (["png", "jpg", "svg", "webp", "md"].includes(extname(c)))
+    } else if (extname(c) === "md") {
+      node.notes.push({ id: `path:${c}`, title: stem(c), path: c, size: (n as any).content.length, modified: n.mtime, created: n.mtime, updated: n.mtime });
+    } else if (["png", "jpg", "svg", "webp"].includes(extname(c)))
       node.assets.push({ name: basename(c), path: c, size: (n as any).content.length, modified: n.mtime });
   }
   node.folders.sort((a, b) => a.name.localeCompare(b.name));
   node.drawings.sort((a, b) => b.updated - a.updated);
+  node.notes.sort((a, b) => b.updated - a.updated);
   return node;
 }
 function projectMeta(p: string) {
@@ -254,7 +257,7 @@ async function mockInvokeInner(cmd: string, a: any): Promise<unknown> {
       const id = `${now()}`;
       const slot = join(trashDir(root), id);
       const name = basename(a.path);
-      const kind = fs.get(norm(a.path))?.dir ? (fs.has(join(a.path, ".aven-project.json")) ? "project" : "folder") : "drawing";
+      const kind = fs.get(norm(a.path))?.dir ? (fs.has(join(a.path, ".aven-project.json")) ? "project" : "folder") : extname(a.path) === "avenboard" ? "board" : extname(a.path) === "md" ? "note" : "drawing";
       const entry = { id, name, kind, originalPath: norm(a.path).slice(root.length + 1), deletedAt: now(), path: "" };
       moveTree(a.path, join(slot, name));
       write(join(slot, "trash.json"), JSON.stringify(entry));
@@ -279,14 +282,27 @@ async function mockInvokeInner(cmd: string, a: any): Promise<unknown> {
       }
       return n;
     }
-    case "drawing_read":
-      return read(a.path);
+    case "drawing_read": {
+      // same rule as the native backend: drawings and boards must be JSON, notes are free text
+      const text = read(a.path);
+      if (extname(a.path) !== "md") {
+        let ok = false;
+        try {
+          const v = JSON.parse(text);
+          ok = !!v && typeof v === "object";
+        } catch {
+          /* reported below */
+        }
+        if (!ok) throw { kind: "corrupt", message: `${a.path} is damaged.` };
+      }
+      return text;
+    }
     case "drawing_write":
-      JSON.parse(a.content);
+      if (extname(a.path) !== "md") JSON.parse(a.content);
       write(a.path, a.content);
       return { path: norm(a.path), modified: now(), size: a.content.length, backupCreated: false };
     case "drawing_create": {
-      const p = unique(join(a.dir, `${safeFileName(a.title)}.${a.ext === "avenboard" ? "avenboard" : "aven"}`));
+      const p = unique(join(a.dir, `${safeFileName(a.title)}.${a.ext === "avenboard" || a.ext === "md" ? a.ext : "aven"}`));
       write(p, a.content);
       return p;
     }

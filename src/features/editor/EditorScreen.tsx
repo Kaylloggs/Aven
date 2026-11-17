@@ -162,6 +162,18 @@ function Editor({ path, doc, modified, dirtyAtStart }: { path: string; doc: Aven
   const session = sessionRef.current;
   const conflict = useEditor((s) => s.saveState === "conflict");
   const canvasStyle = useEditor((s) => s.canvasStyle);
+  // Gauges and charts have their own panel; the engine's style panel would only add noise
+  // (and its changes are overwritten when they are rebuilt from their data).
+  const generatedOnly = useEditor((s) => {
+    const api = s.session?.api;
+    if (!api || !s.selection.length) return false;
+    void s.sceneTick;
+    const byId = new Map(api.getSceneElements().map((e) => [e.id, e]));
+    return s.selection.every((id) => {
+      const cd = (byId.get(id)?.customData ?? {}) as Record<string, unknown>;
+      return !!cd.avenGauge || !!cd.avenChart;
+    });
+  });
   const canvasHost = useRef<HTMLDivElement>(null);
   const conflictMsg = useEditor((s) => s.error);
 
@@ -203,7 +215,7 @@ function Editor({ path, doc, modified, dirtyAtStart }: { path: string; doc: Aven
 
   return (
     <div className="relative h-full overflow-hidden bg-canvas">
-      <div ref={canvasHost} className={`absolute inset-0 aven-canvas ${canvasStyle === "dots" ? "canvas-dots" : ""}`}>
+      <div ref={canvasHost} className={`absolute inset-0 aven-canvas ${canvasStyle === "dots" ? "canvas-dots" : ""} ${generatedOnly ? "generated-selected" : ""}`}>
         <Canvas doc={doc} onReady={onReady} onChange={session.onChange} />
       </div>
       <TopBar />

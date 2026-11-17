@@ -322,3 +322,151 @@ dialog::backdrop {
 .aven-canvas .excalidraw .context-menu {
   display: none !important;
 }
+
+/* ------------------------------------------------------------------ notes (live Markdown) */
+.note-editor .cm-editor {
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+.note-editor .cm-editor.cm-focused {
+  outline: none;
+}
+.note-editor .cm-scroller {
+  font-family: inherit;
+  line-height: 1.7;
+  overflow: visible;
+}
+.note-editor .cm-content {
+  padding: 0 0 40vh;
+  caret-color: var(--accent);
+}
+.note-editor .cm-line {
+  padding: 0;
+}
+.note-editor .cm-placeholder {
+  color: var(--text-faint);
+}
+.note-editor .cm-selectionBackground,
+.note-editor .cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground {
+  background: var(--accent-soft) !important;
+}
+.note-editor .md-h1,
+.note-editor .md-h2,
+.note-editor .md-h3 {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+.note-editor .md-h1 { font-size: 1.75em; font-weight: 700; padding-top: 0.7em; padding-bottom: 0.1em; }
+.note-editor .md-h2 { font-size: 1.4em; font-weight: 680; padding-top: 0.6em; }
+.note-editor .md-h3 { font-size: 1.18em; font-weight: 650; padding-top: 0.5em; }
+.note-editor .md-h4,
+.note-editor .md-h5,
+.note-editor .md-h6 { font-weight: 650; padding-top: 0.4em; }
+.note-editor .md-mark { color: var(--text-faint); }
+.note-editor .md-url { color: var(--text-muted); }
+.note-editor .md-inline-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  border-radius: 4px;
+  padding: 0.1em 0.3em;
+}
+.note-editor .md-code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  padding: 0 1em;
+}
+.note-editor .md-code-first { border-radius: 8px 8px 0 0; padding-top: 0.45em; }
+.note-editor .md-code-last { border-radius: 0 0 8px 8px; padding-bottom: 0.45em; }
+.note-editor .md-code-first.md-code-last { border-radius: 8px; }
+.note-editor .md-quote {
+  color: var(--text-muted);
+  background: var(--surface-2);
+  padding: 0.1em 1em;
+  font-style: italic;
+}
+.note-editor .md-bullet {
+  display: inline-block;
+  width: 1.1em;
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.note-editor .md-task {
+  width: 1.05em;
+  height: 1.05em;
+  margin: 0 0.45em 0 0;
+  vertical-align: -0.17em;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+.note-editor .md-task-done { color: var(--text-faint); text-decoration: line-through; text-decoration-color: var(--text-faint); }
+.note-editor .md-hr {
+  display: inline-block;
+  width: 100%;
+  height: 1px;
+  vertical-align: middle;
+  background: var(--border-strong);
+}
+.note-editor .md-link {
+  color: var(--accent-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in oklch, var(--accent-text) 45%, transparent);
+  text-underline-offset: 3px;
+}
+.note-editor .md-wikilink {
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border-radius: 5px;
+  padding: 0.05em 0.3em;
+  cursor: pointer;
+}
+.note-editor .md-wikilink:hover { text-decoration: underline; text-underline-offset: 3px; }
+.note-editor .md-wikilink-raw { color: var(--accent-text); }
+/* completion lists (slash commands, [[ links) look like Aven menus */
+.note-editor .cm-tooltip {
+  border: 1px solid var(--border);
+  background: var(--raised);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.note-editor .cm-tooltip-autocomplete > ul {
+  font-family: var(--font-sans);
+  max-height: 300px;
+  min-width: 240px;
+  padding: 4px;
+}
+.note-editor .cm-tooltip-autocomplete > ul > li {
+  padding: 6px 10px;
+  border-radius: 6px;
+  color: var(--text);
+  line-height: 1.35;
+}
+.note-editor .cm-tooltip-autocomplete > ul > li[aria-selected] {
+  background: var(--hover);
+  color: var(--text);
+}
+.note-editor .cm-completionDetail {
+  margin-left: 0.8em;
+  color: var(--text-faint);
+  font-size: 12px;
+  font-style: normal;
+}
+.note-editor .cm-completionMatchedText {
+  text-decoration: none;
+  font-weight: 650;
+}
+
+/* Style panel: arrange (Layers) and actions duplicate the right-click menu and shortcuts. */
+.aven-canvas .excalidraw .App-menu__left fieldset:has(button[title^="Send to back"]),
+.aven-canvas .excalidraw .App-menu__left fieldset:has(button[title^="Duplicate"]) {
+  display: none;
+}
+.aven-canvas.generated-selected .excalidraw .App-menu__left {
+  display: none;
+}

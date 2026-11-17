@@ -38,6 +38,8 @@ export interface FolderNode {
   drawings: DrawingEntry[];
   /** Kanban boards (.avenboard) */
   boards: DrawingEntry[];
+  /** Markdown notes (.md) */
+  notes: DrawingEntry[];
   assets: FileEntry[];
 }
 
@@ -67,7 +69,7 @@ export interface ProjectNode {
 export interface TrashEntry {
   id: string;
   name: string;
-  kind: "drawing" | "board" | "folder" | "project";
+  kind: "drawing" | "board" | "note" | "folder" | "project";
   originalPath: string;
   deletedAt: number;
   path: string;
@@ -140,7 +142,7 @@ export interface SearchDoc {
   path: string;
   drawingId: string;
   workspaceId: string;
-  kind: "drawing" | "board" | "template" | "project";
+  kind: "drawing" | "board" | "note" | "template" | "project";
   title: string;
   project: string;
   body: string;

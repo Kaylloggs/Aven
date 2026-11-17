@@ -12,7 +12,7 @@ const C = {
   paperShade: "#E7E5EE",
 };
 
-export function FacetArt({ kind, className }: { kind: "blank" | "template" | "project" | "empty" | "import" | "board"; className?: string }) {
+export function FacetArt({ kind, className }: { kind: "blank" | "template" | "project" | "empty" | "import" | "board" | "note"; className?: string }) {
   return (
     <svg viewBox="0 0 120 90" className={className} aria-hidden>
       {kind === "blank" && (
@@ -54,6 +54,17 @@ export function FacetArt({ kind, className }: { kind: "blank" | "template" | "pr
           <rect x="81" y="21" width="22" height="14" rx="3" fill={C.green} />
           <rect x="81" y="39" width="22" height="14" rx="3" fill={C.blue} />
           <rect x="81" y="57" width="22" height="14" rx="3" fill={C.violet} />
+        </>
+      )}
+      {kind === "note" && (
+        <>
+          <path d="M28 12 H80 L94 26 V80 H28 Z" fill={C.paper} />
+          <path d="M80 12 L94 26 H80 Z" fill={C.paperShade} />
+          <rect x="38" y="28" width="30" height="6" rx="3" fill={C.violet} />
+          <rect x="38" y="42" width="44" height="4" rx="2" fill={C.paperShade} />
+          <rect x="38" y="51" width="40" height="4" rx="2" fill={C.paperShade} />
+          <rect x="38" y="62" width="7" height="7" rx="2" fill={C.green} />
+          <rect x="49" y="63.5" width="28" height="4" rx="2" fill={C.paperShade} />
         </>
       )}
       {kind === "import" && (

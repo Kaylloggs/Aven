@@ -1,6 +1,6 @@
 // Central command runner shared by shortcuts, menus and the command palette.
-import { askText, openBoard, openDrawing, toast, useUI } from "@/store/ui";
-import { openMenuAt } from "@/components/Menu";
+import { askText, openBoard, openDrawing, openNote, toast, useUI } from "@/store/ui";
+import { openMenuAt, type MenuItem } from "@/components/Menu";
 import type { BoardPreset } from "@/engine/board";
 import { inboxPath, useWorkspace } from "@/store/workspace";
 import { useEditor } from "@/features/editor/session";
@@ -37,19 +37,39 @@ const BOARD_PRESETS: { id: BoardPreset; label: string; hint: string }[] = [
   { id: "blank", label: "Blank board", hint: "One empty column" },
 ];
 
+async function createBoardWith(target: string, preset: BoardPreset) {
+  const name = await askText({ title: "New board", label: "Name", initial: preset === "week" ? "This week" : "New board", confirmLabel: "Create board" });
+  if (!name) return;
+  await closeEditorIfOpen();
+  const path = await useWorkspace.getState().createBoard(target, name, preset);
+  openBoard(path);
+}
+
 /** Create a Kanban board (asks for the layout when an anchor element is given). */
 export async function newBoard(dir?: string | null, anchor?: HTMLElement | null) {
   const target = dir ?? currentTargetDir();
   if (!target) return;
-  const create = async (preset: BoardPreset) => {
-    const name = await askText({ title: "New board", label: "Name", initial: preset === "week" ? "This week" : "New board", confirmLabel: "Create board" });
-    if (!name) return;
-    await closeEditorIfOpen();
-    const path = await useWorkspace.getState().createBoard(target, name, preset);
-    openBoard(path);
-  };
+  const create = (preset: BoardPreset) => createBoardWith(target, preset);
   if (!anchor) return create("kanban");
   openMenuAt(anchor, [{ heading: "Start from" }, ...BOARD_PRESETS.map((p) => ({ label: p.label, hint: p.hint, onSelect: () => void create(p.id) }))]);
+}
+
+/** Create a Markdown note and open it; its title is typed straight on the page. */
+export async function newNote(dir?: string | null) {
+  const target = dir ?? currentTargetDir();
+  if (!target) return;
+  await closeEditorIfOpen();
+  const path = await useWorkspace.getState().createNote(target, "Untitled note");
+  openNote(path);
+}
+
+/** The "New" menu: a whiteboard, a Kanban board or a note. */
+export function newMenuItems(dir: string): MenuItem[] {
+  return [
+    { label: "Whiteboard", shortcut: "Mod+N", onSelect: () => void newDrawing(dir) },
+    { label: "Kanban board", onSelect: () => void createBoardWith(dir, "kanban") },
+    { label: "Note", onSelect: () => void newNote(dir) },
+  ];
 }
 
 export async function newProject() {

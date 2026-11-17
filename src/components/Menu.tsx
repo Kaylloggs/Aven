@@ -53,13 +53,15 @@ export function openContextMenu(e: React.MouseEvent | MouseEvent, items: MenuIte
   useMenuStore.getState().show({ x: e.clientX, y: e.clientY, items });
 }
 
-function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0 }: { items: MenuItem[]; x: number; y: number; alignEnd?: boolean; onClose: () => void; minWidth?: number; level?: number }) {
+function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0, parent }: { items: MenuItem[]; x: number; y: number; alignEnd?: boolean; onClose: () => void; minWidth?: number; level?: number; parent?: DOMRect }) {
   const ref = useRef<HTMLDivElement>(null);
   const [pos, setPos] = useState({ left: x, top: y });
   const [active, setActive] = useState(-1);
   const [sub, setSub] = useState<{ index: number; rect: DOMRect } | null>(null);
   const actionable = items.map((it, i) => (typeof it === "object" && "label" in it && !it.disabled ? i : -1)).filter((i) => i >= 0);
   const [placed, setPlaced] = useState(false);
+  // only reserve the leading column when an item shows an icon or a check mark
+  const lead = items.some((it) => typeof it === "object" && "label" in it && (it.icon !== undefined || it.checked !== undefined));
 
   useLayoutEffect(() => {
     const el = ref.current;
@@ -73,12 +75,13 @@ function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0 }: { ite
     const r = el.getBoundingClientRect();
     let left = alignEnd ? x - r.width : x;
     let top = y;
-    if (left + r.width > innerWidth - 8) left = innerWidth - r.width - 8;
+    // a submenu that does not fit on the right opens on the left of its item, never over its parent menu
+    if (left + r.width > innerWidth - 8) left = parent ? parent.left - r.width - 6 : innerWidth - r.width - 8;
     if (top + r.height > innerHeight - 8) top = Math.max(8, innerHeight - r.height - 8);
     setPos({ left: Math.max(8, left), top });
     setPlaced(true);
     if (level === 0) el.focus();
-  }, [x, y, alignEnd, level]);
+  }, [x, y, alignEnd, level, parent]);
 
   const run = (it: MenuItem, i: number, el?: HTMLElement | null) => {
     if (typeof it !== "object" || !("label" in it) || it.disabled) return;
@@ -98,7 +101,7 @@ function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0 }: { ite
         role="menu"
         popover="manual"
         tabIndex={-1}
-        style={{ left: pos.left, top: pos.top, right: "auto", bottom: "auto", margin: 0, minWidth: minWidth && minWidth > 0 ? Math.max(200, minWidth) : 200, zIndex: 50 + level, visibility: placed ? undefined : "hidden" }}
+        style={{ left: pos.left, top: pos.top, right: "auto", bottom: "auto", margin: 0, minWidth: minWidth && minWidth > 0 ? Math.max(180, minWidth) : 180, zIndex: 50 + level, visibility: placed ? undefined : "hidden" }}
         className="fixed max-h-[70vh] overflow-auto rounded-lg border border-border bg-raised p-1 shadow-[var(--shadow)] anim-pop outline-none"
         onKeyDown={(e) => {
           const swatch = (e.target as HTMLElement).dataset?.swatch !== undefined;
@@ -166,14 +169,16 @@ function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0 }: { ite
               }}
               onClick={(e) => run(it, i, e.currentTarget)}
               className={cx(
-                "flex w-full items-center gap-2.5 rounded-md px-2.5 h-8 text-sm text-left cursor-pointer disabled:opacity-40 disabled:cursor-default",
+                "flex w-full items-center gap-2.5 rounded-md px-2.5 h-[30px] text-sm text-left cursor-pointer disabled:opacity-40 disabled:cursor-default",
                 active === i && "bg-hover",
                 it.danger ? "text-danger" : "text-text",
               )}
             >
-              <span className="flex size-4 items-center justify-center text-muted [&>svg]:size-4">
-                {it.checked !== undefined ? it.checked && <Check className="size-4 text-accent-text" /> : it.icon}
-              </span>
+              {lead && (
+                <span className="flex size-4 items-center justify-center text-muted [&>svg]:size-4">
+                  {it.checked !== undefined ? it.checked && <Check className="size-4 text-accent-text" /> : it.icon}
+                </span>
+              )}
               <span className="flex-1 truncate">{it.label}</span>
               {it.hint && <span className="text-xs text-faint truncate max-w-32">{it.hint}</span>}
               {it.shortcut && <span className="text-xs text-faint">{shortcutLabel(it.shortcut)}</span>}
@@ -183,7 +188,7 @@ function MenuList({ items, x, y, alignEnd, onClose, minWidth, level = 0 }: { ite
         })}
       </div>
       {sub && typeof items[sub.index] === "object" && "submenu" in (items[sub.index] as any) && (
-        <MenuList items={(items[sub.index] as any).submenu} x={sub.rect.right + 2} y={sub.rect.top - 4} onClose={onClose} level={level + 1} />
+        <MenuList items={(items[sub.index] as any).submenu} x={sub.rect.right + 6} y={sub.rect.top - 5} onClose={onClose} level={level + 1} parent={sub.rect} />
       )}
     </>
   );

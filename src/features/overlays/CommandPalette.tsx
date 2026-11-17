@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { CornerDownLeft, FileText, Folder, Kanban, Search, Zap } from "lucide-react";
+import { CornerDownLeft, FileText, Folder, Kanban, NotebookText, Search, Zap } from "lucide-react";
 import { api } from "@/platform/api";
 import type { SearchHit } from "@/platform/types";
-import { allBoards, allDrawings, useWorkspace } from "@/store/workspace";
-import { openBoard, openDrawing, useUI } from "@/store/ui";
+import { allBoards, allDrawings, allNotes, useWorkspace } from "@/store/workspace";
+import { openBoard, openDrawing, openNote, useUI } from "@/store/ui";
 import { useSettings } from "@/store/settings";
 import { useEditor } from "@/features/editor/session";
 import { commands, closeEditorIfOpen } from "@/features/commands";
@@ -13,7 +13,7 @@ import { cx, shortcutLabel, timeAgo } from "@/lib/utils";
 
 interface Item {
   key: string;
-  kind: "drawing" | "board" | "project" | "command";
+  kind: "drawing" | "board" | "note" | "project" | "command";
   title: string;
   hint?: string;
   snippet?: string;
@@ -78,6 +78,23 @@ export function CommandPalette() {
           openBoard(d.path);
         },
       }));
+    const notes = allNotes(tree)
+      .filter((d) => !term || d.title.toLowerCase().includes(term))
+      .slice(0, term ? 8 : 3)
+      .map<Item>((d) => ({
+        key: d.path,
+        kind: "note",
+        title: d.title,
+        hint: `Note · ${d.project?.meta.name ?? "Drawings"}`,
+        run: async () => {
+          close();
+          await closeEditorIfOpen();
+          openNote(d.path);
+        },
+      }));
+    const noteHits = hits
+      .filter((h) => h.kind === "note" && !notes.some((b) => b.key === h.path))
+      .map<Item>((h) => ({ key: h.path, kind: "note", title: h.title, hint: "Note", snippet: h.snippet, run: async () => { close(); await closeEditorIfOpen(); openNote(h.path); } }));
     const projects = (tree?.projects ?? [])
       .filter((p) => term && p.meta.name.toLowerCase().includes(term))
       .slice(0, 5)
@@ -99,7 +116,7 @@ export function CommandPalette() {
     const boardHits = hits
       .filter((h) => h.kind === "board" && !boards.some((b) => b.key === h.path))
       .map<Item>((h) => ({ key: h.path, kind: "board", title: h.title, hint: "Board", snippet: h.snippet, run: async () => { close(); await closeEditorIfOpen(); openBoard(h.path); } }));
-    return [...byTitle, ...byContent, ...boards, ...boardHits, ...projects, ...cmds];
+    return [...byTitle, ...byContent, ...boards, ...boardHits, ...notes, ...noteHits, ...projects, ...cmds];
   }, [q, hits, tree, inEditor, shortcuts]);
 
   useEffect(() => setActive(0), [q]);
@@ -139,7 +156,7 @@ export function CommandPalette() {
           {items.map((it, i) => (
             <li key={`${it.kind}:${it.key}`} role="option" aria-selected={i === active} data-index={i}>
               <button onMouseMove={() => setActive(i)} onClick={it.run} className={cx("flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left cursor-pointer", i === active && "bg-hover")}>
-                <span className="text-faint">{it.kind === "drawing" ? <FileText className="size-4" /> : it.kind === "board" ? <Kanban className="size-4" /> : it.kind === "project" ? <Folder className="size-4" /> : <Zap className="size-4" />}</span>
+                <span className="text-faint">{it.kind === "drawing" ? <FileText className="size-4" /> : it.kind === "board" ? <Kanban className="size-4" /> : it.kind === "note" ? <NotebookText className="size-4" /> : it.kind === "project" ? <Folder className="size-4" /> : <Zap className="size-4" />}</span>
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm text-text">{it.title}</span>
                   {it.snippet && <span className="block truncate text-xs text-muted">{highlight(it.snippet)}</span>}

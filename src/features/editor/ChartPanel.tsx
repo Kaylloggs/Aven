@@ -1,22 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
-import { ChartBar, ChartColumn, ChartLine, ChartPie, CircleDashed, Table2 } from "lucide-react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { ChartBar, ChartColumn, ChartLine, ChartPie, CircleDashed, MoreHorizontal, Plus, Table2, X } from "lucide-react";
 import { CaptureUpdateAction, viewportCoordsToSceneCoords } from "@excalidraw/excalidraw";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import {
-  CHART_PALETTE,
-  chartBox,
-  chartIdsIn,
-  chartRef,
-  createChart,
-  parseRows,
-  parseTable,
-  rebuildChart,
-  rowsToText,
-  tableToText,
-  type ChartData,
-  type ChartKind,
-} from "@/engine/charts";
-import { Input, Segmented, Switch, TextArea } from "@/components/ui";
+import { CHART_PALETTE, chartBox, chartIdsIn, chartRef, createChart, parseRows, parseTable, rebuildChart, type ChartData, type ChartKind } from "@/engine/charts";
+import { IconButton, Segmented } from "@/components/ui";
+import { openMenuAt } from "@/components/Menu";
+import { askText } from "@/store/ui";
 import { cx } from "@/lib/utils";
 import { useEditor } from "./session";
 
@@ -60,6 +49,22 @@ export function relayoutCharts(api: ExcalidrawImperativeAPI, ids: readonly strin
   return true;
 }
 
+type Row = { label: string; value: string };
+
+const toNumber = (v: string) => {
+  const n = Number(v.replace(",", ".").replace(/[^\d.-]/g, ""));
+  return Number.isFinite(n) ? n : 0;
+};
+
+/** A cell that looks like text until hovered or focused: the panel reads as a small spreadsheet. */
+const cell = "h-7 min-w-0 rounded-md border border-transparent bg-transparent px-2 text-sm text-text outline-none placeholder:text-faint hover:border-border focus:border-accent focus:bg-surface-2";
+
+/** Pad every row to the same number of columns. */
+function squared(t: string[][]): string[][] {
+  const w = Math.max(1, ...t.map((r) => r.length));
+  return (t.length ? t : [[""]]).map((r) => [...r, ...Array(w - r.length).fill("")]);
+}
+
 export function ChartPanel() {
   const selection = useEditor((s) => s.selection);
   const session = useEditor((s) => s.session);
@@ -75,68 +80,222 @@ export function ChartPanel() {
     return box && data ? { id: ids[0], data } : null;
   }, [selection, session, tick]);
 
-  const [draft, setDraft] = useState("");
+  // Local drafts keep half-typed values ("4.", "-") intact while the chart updates live.
+  const [rows, setRows] = useState<Row[]>([]);
+  const [cells, setCells] = useState<string[][]>([]);
+  const focusNext = useRef<{ r: number; c: number } | null>(null);
+  const listRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (current) setDraft(current.data.kind === "table" ? tableToText(current.data.table) : rowsToText(current.data.rows));
-    // reset the editor when another chart is selected or its kind changes
+    if (!current) return;
+    setRows(current.data.rows.map((r) => ({ label: r.label, value: String(r.value) })));
+    setCells(squared(current.data.table));
+    // reset when another chart is selected or its kind changes
   }, [current?.id, current?.data.kind]); // eslint-disable-line react-hooks/exhaustive-deps
+  useLayoutEffect(() => {
+    const f = focusNext.current;
+    if (!f) return;
+    focusNext.current = null;
+    listRef.current?.querySelector<HTMLInputElement>(`[data-r="${f.r}"][data-c="${f.c}"]`)?.focus();
+  });
 
   if (!current || !session?.api) return null;
   const api = session.api;
   const d = current.data;
-  const apply = (patch: Partial<ChartData>) =>
-    api.updateScene({ elements: rebuildChart(api.getSceneElements(), current.id, { ...d, ...patch }), captureUpdate: CaptureUpdateAction.IMMEDIATELY });
-  const commitDraft = (v = draft) => (d.kind === "table" ? apply({ table: parseTable(v) }) : apply({ rows: parseRows(v) }));
+  const isTable = d.kind === "table";
+  // Always start from the chart's data as it is in the scene now: this render may predate an
+  // edit made a moment ago (a blur right after adding a row would otherwise drop the row).
+  const apply = (patch: Partial<ChartData>, capture: "now" | "later" = "now") => {
+    const scene = api.getSceneElements();
+    const latest = chartRef(chartBox(scene, current.id) ?? ({} as any))?.data ?? d;
+    api.updateScene({
+      elements: rebuildChart(scene, current.id, { ...latest, ...patch }),
+      captureUpdate: capture === "now" ? CaptureUpdateAction.IMMEDIATELY : CaptureUpdateAction.EVENTUALLY,
+    });
+  };
+
+  const commitRows = (next: Row[], capture: "now" | "later" = "now") => {
+    setRows(next);
+    apply({ rows: next.map((r) => ({ label: r.label, value: toNumber(r.value) })) }, capture);
+  };
+  const commitCells = (next: string[][], capture: "now" | "later" = "now") => {
+    const sq = squared(next);
+    setCells(sq);
+    apply({ table: sq }, capture);
+  };
+
+  // ---- keyboard: Enter goes down a row (adding one at the end), arrows move between rows
+  const focusCell = (r: number, c: number) => listRef.current?.querySelector<HTMLInputElement>(`[data-r="${r}"][data-c="${c}"]`)?.focus();
+  const onCellKey = (e: React.KeyboardEvent<HTMLInputElement>, r: number, c: number, count: number, addRow: () => void) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      if (r < count - 1) return focusCell(r + 1, c);
+      addRow();
+      focusNext.current = { r: r + 1, c };
+    } else if (e.key === "ArrowDown" && r < count - 1) {
+      e.preventDefault();
+      focusCell(r + 1, c);
+    } else if (e.key === "ArrowUp" && r > 0) {
+      e.preventDefault();
+      focusCell(r - 1, c);
+    } else if (e.key === "Escape") {
+      (e.target as HTMLInputElement).blur();
+    }
+  };
+
+  // ---- paste several lines/cells at once (from a spreadsheet, a list or a Markdown table)
+  const pasteRows = (e: React.ClipboardEvent, at: number) => {
+    const text = e.clipboardData.getData("text/plain");
+    if (!/[\n\t]/.test(text.trim())) return;
+    e.preventDefault();
+    const parsed = parseRows(text).map((p) => ({ label: p.label, value: String(p.value) }));
+    commitRows([...rows.slice(0, at), ...parsed, ...rows.slice(at + parsed.length)]);
+  };
+  const pasteCells = (e: React.ClipboardEvent, r0: number, c0: number) => {
+    const text = e.clipboardData.getData("text/plain");
+    if (!/[\n\t]/.test(text.trim())) return;
+    e.preventDefault();
+    const block = parseTable(text);
+    const next = cells.map((row) => [...row]);
+    block.forEach((line, i) =>
+      line.forEach((v, j) => {
+        while (next.length <= r0 + i) next.push([]);
+        next[r0 + i][c0 + j] = v;
+      }),
+    );
+    commitCells(next.map((row) => Array.from(row, (v) => v ?? "")));
+  };
+
+  const options = (el: HTMLElement) =>
+    openMenuAt(
+      el,
+      [
+        { label: "Show values", checked: d.showValues, onSelect: () => apply({ showValues: !d.showValues }) },
+        {
+          label: "Unit…",
+          hint: d.unit || "none",
+          onSelect: async () => {
+            const u = await askText({ title: "Unit", label: "Shown after each value, for example %, € or h", initial: d.unit, confirmLabel: "Save" });
+            if (u !== null) apply({ unit: u.trim().slice(0, 6) });
+          },
+        },
+        "separator",
+        { heading: "Colours" },
+        ...PALETTES.map((p) => ({ label: p.name, checked: p.colors[0] === d.palette[0] && p.colors[1] === d.palette[1], onSelect: () => apply({ palette: p.colors }) })),
+      ],
+      "end",
+    );
+
+  const addRow = () => commitRows([...rows, { label: `Item ${rows.length + 1}`, value: "0" }]);
+  const addTableRow = () => commitCells([...cells, Array(cells[0]?.length ?? 1).fill("")]);
+  const addTableColumn = () => commitCells(cells.map((row, i) => [...row, i === 0 ? `Column ${row.length + 1}` : ""]));
+  const width = cells[0]?.length ?? 1;
 
   return (
-    <div role="group" aria-label="Chart" className="island pointer-events-auto absolute bottom-3 left-1/2 z-30 w-[min(640px,calc(100%-180px))] -translate-x-1/2 p-3 anim-pop" onKeyDown={(e) => e.stopPropagation()}>
-      <div className="flex flex-wrap items-center gap-2">
-        <Segmented
-          size="sm"
-          label="Chart type"
-          value={d.kind}
-          onChange={(kind) => apply({ kind })}
-          options={CHART_KINDS.map((k) => ({ value: k.value, label: k.icon, title: k.label }))}
-        />
-        {d.kind !== "table" && (
-          <Input className="min-w-40 flex-1" value={d.title} placeholder="Title" aria-label="Chart title" onChange={(e) => apply({ title: e.target.value })} />
+    <div
+      role="group"
+      aria-label={isTable ? "Table" : "Chart"}
+      className="island pointer-events-auto absolute bottom-3 left-1/2 z-30 w-[min(520px,calc(100%-180px))] -translate-x-1/2 p-2.5 anim-pop"
+      onKeyDown={(e) => e.stopPropagation()}
+    >
+      <div className="flex items-center gap-2">
+        <Segmented size="sm" label="Chart type" value={d.kind} onChange={(kind) => apply({ kind })} options={CHART_KINDS.map((k) => ({ value: k.value, label: k.icon, title: k.label }))} />
+        {isTable ? (
+          <span className="flex-1 text-xs text-faint">First row is the header</span>
+        ) : (
+          <input className={cx(cell, "min-w-0 flex-1 font-[600]")} value={d.title} placeholder="Add a title" aria-label="Chart title" onChange={(e) => apply({ title: e.target.value }, "later")} onBlur={() => apply({})} />
         )}
-        {d.kind !== "table" && (
-          <>
-            <Input className="w-20" value={d.unit} placeholder="Unit" aria-label="Unit" onChange={(e) => apply({ unit: e.target.value.slice(0, 6) })} />
-            <label className="flex items-center gap-1.5 text-xs text-muted">
-              <Switch label="Show values" checked={d.showValues} onChange={(v) => apply({ showValues: v })} /> Values
-            </label>
-          </>
+        {!isTable && (
+          <IconButton label="Chart options" size="sm" onClick={(e) => options(e.currentTarget)}>
+            <MoreHorizontal className="size-4" />
+          </IconButton>
         )}
       </div>
-      <div className="mt-2 flex gap-3">
-        <TextArea
-          value={draft}
-          aria-label={d.kind === "table" ? "Table cells" : "Chart data"}
-          spellCheck={false}
-          onChange={(e) => {
-            setDraft(e.target.value);
-            commitDraft(e.target.value);
-          }}
-          className="min-h-24 flex-1 font-mono text-xs"
-          placeholder={d.kind === "table" ? "One row per line, cells separated by tabs, ; or |" : "One line per item: label, value"}
-        />
-        {d.kind !== "table" && (
-          <div className="flex w-32 shrink-0 flex-col gap-1.5" role="radiogroup" aria-label="Colours">
-            {PALETTES.map((p) => {
-              const on = p.colors[0] === d.palette[0] && p.colors[1] === d.palette[1];
-              return (
-                <button key={p.name} role="radio" aria-checked={on} onClick={() => apply({ palette: p.colors })} className={cx("flex items-center gap-1.5 rounded-md px-1.5 py-1 text-2xs cursor-pointer", on ? "bg-accent-soft text-text" : "text-muted hover:bg-hover")}>
-                  <span className="flex">{p.colors.slice(0, 4).map((c) => <span key={c} className="size-2.5" style={{ background: c }} />)}</span>
-                  {p.name}
-                </button>
-              );
-            })}
-          </div>
+
+      <div ref={listRef} className="mt-2 max-h-56 overflow-auto">
+        {isTable ? (
+          <table className="w-full border-separate border-spacing-y-px text-sm">
+            <tbody>
+              {cells.map((row, r) => (
+                <tr key={r} className="group">
+                  {row.map((v, c) => (
+                    <td key={c} className="p-0">
+                      <input
+                        className={cx(cell, "w-full", r === 0 && "font-[650]")}
+                        value={v}
+                        data-r={r}
+                        data-c={c}
+                        aria-label={r === 0 ? `Header ${c + 1}` : `Row ${r}, column ${c + 1}`}
+                        onChange={(e) => commitCells(cells.map((x, i) => (i === r ? x.map((y, j) => (j === c ? e.target.value : y)) : x)), "later")}
+                        onBlur={() => apply({})}
+                        onPaste={(e) => pasteCells(e, r, c)}
+                        onKeyDown={(e) => onCellKey(e, r, c, cells.length, addTableRow)}
+                      />
+                    </td>
+                  ))}
+                  <td className="w-7 p-0 text-right">
+                    {r === 0 ? (
+                      width > 1 && (
+                        <IconButton label="Remove last column" size="sm" className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => commitCells(cells.map((x) => x.slice(0, -1)))}>
+                          <X className="size-3.5" />
+                        </IconButton>
+                      )
+                    ) : (
+                      <IconButton label={`Remove row ${r}`} size="sm" className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => commitCells(cells.filter((_, i) => i !== r))}>
+                        <X className="size-3.5" />
+                      </IconButton>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : (
+          rows.map((row, r) => (
+            <div key={r} className="group flex items-center gap-1.5">
+              <span className="size-2.5 shrink-0 rounded-full" style={{ background: d.kind === "line" ? d.palette[0] : d.palette[r % d.palette.length] }} aria-hidden />
+              <input
+                className={cx(cell, "flex-1")}
+                value={row.label}
+                data-r={r}
+                data-c={0}
+                placeholder="Label"
+                aria-label={`Label ${r + 1}`}
+                onChange={(e) => commitRows(rows.map((x, i) => (i === r ? { ...x, label: e.target.value } : x)), "later")}
+                onBlur={() => apply({})}
+                onPaste={(e) => pasteRows(e, r)}
+                onKeyDown={(e) => onCellKey(e, r, 0, rows.length, addRow)}
+              />
+              <input
+                className={cx(cell, "w-24 shrink-0 text-right tabular-nums")}
+                inputMode="decimal"
+                value={row.value}
+                data-r={r}
+                data-c={1}
+                aria-label={`Value ${r + 1}`}
+                onChange={(e) => commitRows(rows.map((x, i) => (i === r ? { ...x, value: e.target.value } : x)), "later")}
+                onBlur={() => apply({})}
+                onPaste={(e) => pasteRows(e, r)}
+                onKeyDown={(e) => onCellKey(e, r, 1, rows.length, addRow)}
+              />
+              <IconButton label={`Remove ${row.label || `row ${r + 1}`}`} size="sm" className="opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => commitRows(rows.filter((_, i) => i !== r))}>
+                <X className="size-3.5" />
+              </IconButton>
+            </div>
+          ))
         )}
       </div>
-      <p className="mt-1.5 text-2xs text-faint">{d.kind === "table" ? "Paste cells straight from a spreadsheet. The first row is the header." : "Edit as text: one “label, value” per line. Resize the chart and it re-lays itself out."}</p>
+
+      <div className="mt-1.5 flex items-center gap-1">
+        <button type="button" onClick={isTable ? addTableRow : addRow} className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted hover:bg-hover hover:text-text cursor-pointer">
+          <Plus className="size-3.5" /> Row
+        </button>
+        {isTable && (
+          <button type="button" onClick={addTableColumn} className="flex h-7 items-center gap-1.5 rounded-md px-2 text-xs text-muted hover:bg-hover hover:text-text cursor-pointer">
+            <Plus className="size-3.5" /> Column
+          </button>
+        )}
+        <span className="ml-auto text-2xs text-faint">Paste cells from a spreadsheet to fill several rows</span>
+      </div>
     </div>
   );
 }

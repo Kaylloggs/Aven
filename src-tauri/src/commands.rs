@@ -296,10 +296,13 @@ pub fn drawing_write(
 pub fn drawing_create(dir: String, title: String, content: String, ext: Option<String>) -> AppResult<String> {
     let ext = match ext.as_deref() {
         Some("avenboard") => ws::BOARD_EXT,
+        Some("md") => ws::NOTE_EXT,
         _ => ws::DRAWING_EXT,
     };
     let p = unique_path(&Path::new(&dir).join(format!("{}.{}", safe_name(&title), ext)));
-    serde_json::from_str::<Value>(&content)?;
+    if ext != ws::NOTE_EXT {
+        serde_json::from_str::<Value>(&content)?;
+    }
     atomic_write(&p, content.as_bytes())?;
     Ok(p.to_string_lossy().into())
 }

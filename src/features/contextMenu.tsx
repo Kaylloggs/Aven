@@ -1,7 +1,6 @@
 // One right-click behaviour for the whole app: Aven menus everywhere, never the browser's.
 // Components with their own menu (cards, projects, layers...) handle the event first and stop it;
 // what reaches the window is a text field, the canvas, or a spot with nothing to offer.
-import { ClipboardPaste, Copy, Scissors, TextSelect, Undo2 } from "lucide-react";
 import { openContextMenu, type MenuItem } from "@/components/Menu";
 import { toast } from "@/store/ui";
 
@@ -34,13 +33,11 @@ function textFieldMenu(f: Field): MenuItem[] {
     if (sel) f.setSelectionRange(sel[0], sel[1]);
   };
   return [
-    { label: "Undo", icon: <Undo2 className="size-4" />, shortcut: "Mod+Z", disabled: !editable, onSelect: () => (restore(), document.execCommand("undo")) },
-    "separator",
-    { label: "Cut", icon: <Scissors className="size-4" />, shortcut: "Mod+X", disabled: !editable || !hasSelection || secret, onSelect: () => (restore(), document.execCommand("cut")) },
-    { label: "Copy", icon: <Copy className="size-4" />, shortcut: "Mod+C", disabled: !hasSelection || secret, onSelect: () => (restore(), document.execCommand("copy")) },
+    { label: "Cut", shortcut: "Mod+X", disabled: !editable || !hasSelection || secret, onSelect: () => (restore(), document.execCommand("cut")) },
+    { label: "Copy", shortcut: "Mod+C", disabled: !hasSelection || secret, onSelect: () => (restore(), document.execCommand("copy")) },
     {
       label: "Paste",
-      icon: <ClipboardPaste className="size-4" />,
+     
       shortcut: "Mod+V",
       disabled: !editable,
       onSelect: async () => {
@@ -58,7 +55,32 @@ function textFieldMenu(f: Field): MenuItem[] {
       },
     },
     "separator",
-    { label: "Select all", icon: <TextSelect className="size-4" />, shortcut: "Mod+A", onSelect: () => (f.focus({ preventScroll: true }), f.select()) },
+    { label: "Select all", shortcut: "Mod+A", onSelect: () => (f.focus({ preventScroll: true }), f.select()) },
+  ];
+}
+
+/** Rich text areas (the note editor): the browser's own editing commands do the work. */
+function editableMenu(el: HTMLElement): MenuItem[] {
+  const sel = document.getSelection();
+  const hasSelection = !!sel && !sel.isCollapsed && el.contains(sel.anchorNode);
+  return [
+    { label: "Cut", shortcut: "Mod+X", disabled: !hasSelection, onSelect: () => (el.focus(), document.execCommand("cut")) },
+    { label: "Copy", shortcut: "Mod+C", disabled: !hasSelection, onSelect: () => (el.focus(), document.execCommand("copy")) },
+    {
+      label: "Paste",
+      shortcut: "Mod+V",
+      onSelect: async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          el.focus();
+          document.execCommand("insertText", false, text);
+        } catch {
+          toast({ kind: "info", title: "Press Ctrl+V to paste", message: "The clipboard could not be read from the menu." });
+        }
+      },
+    },
+    "separator",
+    { label: "Select all", shortcut: "Mod+A", onSelect: () => (el.focus(), document.execCommand("selectAll")) },
   ];
 }
 
@@ -68,6 +90,8 @@ export function installContextMenu(): () => void {
     const t = e.target instanceof HTMLElement ? e.target : null;
     const field = t && textField(t);
     if (field) return openContextMenu(e, textFieldMenu(field));
+    const editable = t?.closest<HTMLElement>('[contenteditable="true"]');
+    if (editable) return openContextMenu(e, editableMenu(editable));
     e.preventDefault();
     if (t?.closest(".excalidraw")) {
       const { clientX, clientY } = e;

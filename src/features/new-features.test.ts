@@ -24,6 +24,9 @@ import {
 import { buildParts, chartBox, chartIdsIn, chartRef, createChart, defaultChartData, parseRows, parseTable, rebuildChart } from "@/engine/charts";
 import { decorationRects, styleTargets, toggleTextStyle, hasStyle } from "@/engine/textStyle";
 import { outlineToBoard, parseOutline, looksLikeMermaid } from "./editor/textDiagram";
+import { separateDuplicates } from "@/engine/generated";
+import { createGauge, gaugeData, setGaugeValue } from "@/engine/gauge";
+import { noteKey, resolveLink, wikilinkTargets } from "./notes/links";
 
 describe("kanban boards", () => {
   it("creates presets with columns and sample cards", () => {
@@ -234,5 +237,66 @@ describe("diagrams from text", () => {
     expect(looksLikeMermaid("flowchart LR\n A-->B")).toBe(true);
     expect(looksLikeMermaid("sequenceDiagram\n A->>B: hi")).toBe(true);
     expect(looksLikeMermaid("Plan\n  Step")).toBe(false);
+  });
+});
+
+describe("duplicated gauges and charts", () => {
+  const copyOf = (els: any[], dx: number) => els.map((e) => ({ ...e, id: `${e.id}-copy`, x: e.x + dx, groupIds: ["copy-group"] }));
+  const role = (els: any[], r: string) => els.find((e) => gaugeData(e)?.role === r);
+
+  it("gives a duplicated gauge its own id and puts each part back on its own track", () => {
+    const original = createGauge(0, 0, { value: 40 }) as any[];
+    const copy = copyOf(original, 500);
+    // what used to happen: editing the copy laid out both gauges as one
+    const merged = setGaugeValue([...original, ...copy], [gaugeData(original[0])!.gaugeId], 70);
+    const fixed = separateDuplicates(merged)!;
+    expect(new Set(fixed.map((e) => gaugeData(e)?.gaugeId)).size).toBe(2);
+    const copyEls = fixed.filter((e) => e.id.endsWith("-copy"));
+    expect(role(copyEls, "fill").x).toBe(role(copyEls, "track").x);
+    expect(role(fixed.filter((e) => !e.id.endsWith("-copy")), "fill").x).toBe(0);
+    expect(separateDuplicates(fixed)).toBeNull();
+  });
+
+  it("gives a duplicated chart its own id, each with its box and parts", () => {
+    const original = createChart(0, 0, "bar") as any[];
+    const fixed = separateDuplicates([...original, ...copyOf(original, 600)])!;
+    const ids = [...new Set(fixed.map((e) => chartRef(e)?.chartId))];
+    expect(ids).toHaveLength(2);
+    for (const id of ids) {
+      expect(chartBox(fixed, id!)).toBeTruthy();
+      expect(fixed.filter((e) => chartRef(e)?.chartId === id && chartRef(e)?.role === "part").length).toBeGreaterThan(3);
+    }
+  });
+
+  it("leaves scenes without copies untouched", () => {
+    expect(separateDuplicates([...createGauge(0, 0), ...createChart(0, 100, "pie")])).toBeNull();
+  });
+});
+
+describe("note links", () => {
+  it("reads [[links]] the way Obsidian writes them", () => {
+    expect(wikilinkTargets("See [[Roadmap]], [[Plan|the plan]] and [[Spec#Scope]].")).toEqual(["Roadmap", "Plan", "Spec"]);
+  });
+
+  it("resolves a link to the closest document with that title", () => {
+    const entry = (path: string, title: string) => ({ id: `id:${path}`, title, path, size: 1, modified: 1, created: 1, updated: 1 });
+    const folder = (path: string, extra: any = {}) => ({ name: path, path, folders: [], drawings: [], boards: [], notes: [], assets: [], ...extra });
+    const tree: any = {
+      projects: [{ path: "P", meta: { name: "P" }, archived: false, root: folder("P", { drawings: [entry("P/Plan.aven", "Plan")], notes: [entry("P/Notes.md", "Notes")] }) }],
+      archives: [],
+      inbox: folder("D", { boards: [entry("D/Plan.avenboard", "Plan")] }),
+      templates: [],
+      trash: [],
+      state: {},
+    };
+    expect(resolveLink(tree, "Plan", "P/Notes.md")?.path).toBe("P/Plan.aven");
+    expect(resolveLink(tree, "plan", "D/Other.md")?.path).toBe("D/Plan.avenboard");
+    expect(resolveLink(tree, "Missing")).toBeNull();
+  });
+
+  it("derives a stable, file-safe key for note backups", () => {
+    expect(noteKey("C:/A/Note.md")).toMatch(/^note-[0-9a-f]{8}$/);
+    expect(noteKey("C:/A/Note.md")).toBe(noteKey("c:/a/note.md"));
+    expect(noteKey("C:/A/Note.md")).not.toBe(noteKey("C:/A/Other.md"));
   });
 });

@@ -70,7 +70,7 @@ export const api = {
     policy: T.BackupPolicy;
     expectedModified?: number;
   }) => call<T.WriteResult>("drawing_write", args),
-  drawingCreate: (dir: string, title: string, content: string, ext?: "aven" | "avenboard") =>
+  drawingCreate: (dir: string, title: string, content: string, ext?: "aven" | "avenboard" | "md") =>
     call<string>("drawing_create", { dir, title, content, ext }),
   drawingBackups: (wsId: string, drawingId: string) => call<T.FileEntry[]>("drawing_backups", { wsId, drawingId }),
   thumbWrite: (wsId: string, drawingId: string, data: string) => call<void>("thumb_write", { wsId, drawingId, data }),

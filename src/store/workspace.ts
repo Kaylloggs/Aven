@@ -45,6 +45,7 @@ interface WorkspaceStore {
   createFolder: (parent: string, name: string) => Promise<string>;
   createDrawing: (dir: string, title: string, doc?: AvenDocument) => Promise<string>;
   createBoard: (dir: string, title: string, preset?: BoardPreset) => Promise<string>;
+  createNote: (dir: string, title: string) => Promise<string>;
   rename: (path: string, name: string) => Promise<string>;
   move: (path: string, destDir: string) => Promise<string>;
   duplicate: (path: string) => Promise<string>;
@@ -75,6 +76,37 @@ export function flattenBoards(f: FolderNode, project: ProjectNode | null, out: D
   for (const d of f.boards ?? []) out.push({ ...d, project, folderPath: f.path });
   for (const sub of f.folders) flattenBoards(sub, project, out);
   return out;
+}
+
+export function flattenNotes(f: FolderNode, project: ProjectNode | null, out: DrawingRef[] = []): DrawingRef[] {
+  for (const d of f.notes ?? []) out.push({ ...d, project, folderPath: f.path });
+  for (const sub of f.folders) flattenNotes(sub, project, out);
+  return out;
+}
+
+export function allNotes(tree: WorkspaceTree | null): DrawingRef[] {
+  if (!tree) return [];
+  const out: DrawingRef[] = [];
+  for (const p of tree.projects) flattenNotes(p.root, p, out);
+  flattenNotes(tree.inbox, null, out);
+  return out;
+}
+
+export type DocKind = "drawing" | "board" | "note";
+
+/** What kind of Aven document a path is, from its extension. */
+export function docKind(path: string): DocKind {
+  const p = path.toLowerCase();
+  return p.endsWith(".avenboard") ? "board" : p.endsWith(".md") ? "note" : "drawing";
+}
+
+/** Every drawing, board and note of the workspace, for links and pickers. */
+export function allDocuments(tree: WorkspaceTree | null): (DrawingRef & { kind: DocKind })[] {
+  return [
+    ...allDrawings(tree).map((d) => ({ ...d, kind: "drawing" as const })),
+    ...allBoards(tree).map((d) => ({ ...d, kind: "board" as const })),
+    ...allNotes(tree).map((d) => ({ ...d, kind: "note" as const })),
+  ];
 }
 
 export function allBoards(tree: WorkspaceTree | null): DrawingRef[] {
@@ -231,6 +263,13 @@ export const useWorkspace = create<WorkspaceStore>((set, get) => ({
     guard("create the board", async () => {
       const b = createBoardDoc(title, preset);
       const path = await api.drawingCreate(dir, title, serializeBoard(b), "avenboard");
+      await get().refresh();
+      return path;
+    }),
+
+  createNote: (dir, title) =>
+    guard("create the note", async () => {
+      const path = await api.drawingCreate(dir, title, "", "md");
       await get().refresh();
       return path;
     }),

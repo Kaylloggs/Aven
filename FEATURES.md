@@ -8,14 +8,15 @@ Status legend: **Done** (implemented and exercised), **Partial** (works with a d
 |---|---|---|
 | Selection, hand/pan | Done | V / H, Space+drag |
 | Rectangle, diamond, ellipse | Done | R, D, O |
-| Square, circle | Done | Presets in "More shapes"; drawn shape is made regular on release (Shift also works) |
+| Square, circle | Done | In the Shapes button's variants; drawn shape is made regular on release (Shift also works) |
 | Rounded rectangle | Done | Preset; edges can be toggled for any shape |
 | Line, arrow, double arrow | Done | L, A; double arrow preset sets both arrowheads |
 | Connector | Done | Elbow arrows that bind to shapes and re-route when shapes move |
 | Freehand, eraser, text, image | Done | P, E, T, 9 |
 | Laser pointer, frame | Done | K, F |
-| Keep tool active | Done | Q or the lock button in the rail |
-| Percentage gauge (bar or ring) | Done | Rail button; select a gauge to set value, colour and style (UT) |
+| Keep tool active | Done | Q, or in the variants of the Shapes, Arrows and Draw buttons |
+| Compact tool rail | Done | 7 buttons: Select, Hand, Shapes, Arrows and lines, Draw (pen, eraser, laser), Text, Insert; grouped buttons remember the last tool used |
+| Percentage gauge (bar or ring) | Done | Insert menu; select a gauge to set value, colour and style; copies are independent (UT) |
 
 ## Object manipulation
 
@@ -51,9 +52,19 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 
 | Feature | Status | Notes |
 |---|---|---|
-| Bar, horizontal bar, line, pie, donut charts | Done | Editable shapes; data edited as text; palettes; re-layout after resize (UT) |
-| Tables | Done | Paste cells from a spreadsheet or a Markdown table (UT) |
+| Bar, horizontal bar, line, pie, donut charts | Done | Editable shapes; data edited in a row editor (label, value); palettes and unit in the chart menu; re-layout after resize; copies are independent (UT) |
+| Tables | Done | Edited as a grid (add or remove rows and columns); paste cells from a spreadsheet or a Markdown table (UT) |
 | Diagram from text | Done | Indented list to mind map, org chart, plan, flow; Mermaid to shapes (UT for list layouts; Mermaid verified in the UI) |
+
+## Notes
+
+| Feature | Status | Notes |
+|---|---|---|
+| Notes as plain `.md` files in projects and folders | Done | RT; created from the New menu; title is the file name |
+| Live Markdown (headings, emphasis, lists, to-dos, quotes, code, dividers, links) | Done | Marks shown only on the edited line; verified in the UI |
+| `/` commands and `[[` links to whiteboards, boards and notes | Done | UT for link parsing and resolution; verified in the UI |
+| Autosave, version history, conflict detection, trash, search | Done | same write path as drawings (RT) |
+| Copy for Notion, copy to an Obsidian vault | Done | |
 
 ## Kanban boards
 
@@ -65,6 +76,7 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 | Filter by text and label; search across boards (Ctrl+P) | Done | |
 | Autosave, version history, conflict detection, save on window close | Done | same write path as drawings |
 | Export Markdown, copy for Notion, Obsidian Kanban plugin format | Done | UT |
+| Card links to whiteboards, boards and notes | Done | verified in the UI |
 | Right-click menus on cards, column headers and the board background | Done | verified in the UI |
 | Label rename, colour and delete; colour swatches for columns and labels | Done | UT |
 

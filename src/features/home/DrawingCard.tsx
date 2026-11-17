@@ -2,11 +2,11 @@ import { memo, useEffect } from "react";
 import { FileText, Folder, MoreHorizontal, Star } from "lucide-react";
 import type { FolderNode } from "@/platform/types";
 import { countDrawings, useWorkspace, type DrawingRef } from "@/store/workspace";
-import { openBoard, openDrawing, useUI } from "@/store/ui";
+import { openBoard, openDrawing, openNote, useUI } from "@/store/ui";
 import { IconButton } from "@/components/ui";
 import { openContextMenu, openMenuAt } from "@/components/Menu";
 import { cx, formatBytes, formatDate, timeAgo } from "@/lib/utils";
-import { boardMenu, drawingMenu, folderMenu } from "./actions";
+import { boardMenu, drawingMenu, folderMenu, noteMenu } from "./actions";
 import { FacetArt } from "@/components/FacetArt";
 import { PROJECT_COLORS } from "@/components/ui";
 import { DND_TYPE, dropProps } from "./dnd";
@@ -154,6 +154,32 @@ export function BoardCard({ d, showProject = true }: { d: DrawingRef; showProjec
         </span>
       </button>
       <IconButton label="Board options" size="sm" className="absolute right-8 top-1/2 -translate-y-1/2 bg-raised opacity-0 shadow-[var(--shadow-sm)] group-hover:opacity-100 focus:opacity-100" onClick={(e) => openMenuAt(e.currentTarget, boardMenu(d), "end")}>
+        <MoreHorizontal className="size-4" />
+      </IconButton>
+    </div>
+  );
+}
+
+export function NoteCard({ d, showProject = true }: { d: DrawingRef; showProject?: boolean }) {
+  return (
+    <div className="group relative" draggable onDragStart={(e) => e.dataTransfer.setData(DND_TYPE, d.path)} onContextMenu={(e) => openContextMenu(e, noteMenu(d))}>
+      <button
+        type="button"
+        onClick={() => openNote(d.path)}
+        style={{ ["--fold" as any]: d.project ? PROJECT_COLORS[d.project.meta.color] : "var(--facet-violet)" }}
+        className="fold lift flex w-full items-center gap-3 overflow-hidden rounded-2xl border border-border bg-surface p-3 text-left hover:border-border-strong cursor-pointer"
+      >
+        <span className="grid size-14 shrink-0 place-items-center rounded-xl bg-surface-2">
+          <FacetArt kind="note" className="h-10" />
+        </span>
+        <span className="min-w-0">
+          <span className="block truncate text-sm font-[600]">{d.title}</span>
+          <span className="block truncate text-xs text-faint">
+            Note{showProject ? ` · ${d.project?.meta.name ?? "Drawings"}` : ""} · {timeAgo(d.updated)}
+          </span>
+        </span>
+      </button>
+      <IconButton label="Note options" size="sm" className="absolute right-8 top-1/2 -translate-y-1/2 bg-raised opacity-0 shadow-[var(--shadow-sm)] group-hover:opacity-100 focus:opacity-100" onClick={(e) => openMenuAt(e.currentTarget, noteMenu(d), "end")}>
         <MoreHorizontal className="size-4" />
       </IconButton>
     </div>

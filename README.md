@@ -7,11 +7,11 @@
 
 <p align="center">
   <b>A local-first desktop workspace for visual thinking.</b><br>
-  An infinite whiteboard, Kanban boards, charts and diagrams, organised in projects on your own disk.
+  An infinite whiteboard, Kanban boards and Markdown notes, linked together and organised in projects on your own disk.
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.2.1-F76046" alt="Version 1.2.1">
+  <img src="https://img.shields.io/badge/version-1.3.0-F76046" alt="Version 1.3.0">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-567BF7" alt="Windows 10 and 11">
   <img src="https://img.shields.io/badge/works-offline-2FB27E" alt="Works offline">
   <img src="https://img.shields.io/badge/license-MIT-8E5BE8" alt="MIT license">
@@ -19,7 +19,7 @@
 
 ![Aven home screen: projects, recent drawings and quick actions](docs/images/home.png)
 
-Aven pairs an infinite drawing canvas (built on the open-source Excalidraw engine) with a real project manager. Your drawings and boards are ordinary files (`.aven`, `.avenboard`) in a folder you choose, with autosave, version history and backups. Everything essential works offline; nothing leaves your computer unless you export it.
+Aven pairs an infinite drawing canvas (built on the open-source Excalidraw engine) with Kanban boards, Markdown notes and a real project manager. Your whiteboards, boards and notes are ordinary files (`.aven`, `.avenboard`, `.md`) in a folder you choose, with autosave, version history and backups. Everything essential works offline; nothing leaves your computer unless you export it.
 
 ## Highlights
 
@@ -33,11 +33,11 @@ Workspaces live in folders you pick. Inside them: projects with colours and desc
 
 Shapes, arrows, text, images and freehand drawing on an infinite canvas, with optional layers and reusable linked components (Settings › Advanced editing). Rotation snaps back upright, the canvas comes in three looks (dots, off-white, dark), and text can be bold, italic, underlined or struck through.
 
-![The editor with a roadmap and the layers panel](docs/images/editor.png)
+![The whiteboard with its compact tool rail and the layers panel](docs/images/editor.png)
 
-Right-click anywhere for Aven's own menus: arrange, group, flip, copy styles, lock, link, copy as PNG, or insert a diagram, chart or gauge on empty canvas.
+The tool rail stays small: shapes, arrows and drawing tools each share one button that remembers your last choice, and images, frames, diagrams, charts and gauges sit under Insert. Right-click for short, Aven-styled menus.
 
-![The canvas right-click menu](docs/images/canvas-menu.png)
+![The short right-click menu on a shape](docs/images/canvas-menu.png)
 
 ### Kanban boards
 
@@ -46,15 +46,21 @@ Boards sit next to drawings in your projects. Drag cards and columns, add checkl
 <table>
   <tr>
     <td><img src="docs/images/board.png" alt="A Kanban board with five columns"></td>
-    <td><img src="docs/images/board-card.png" alt="Card details with checklist, due date and labels"></td>
+    <td><img src="docs/images/board-card.png" alt="Card details with checklist, due date, labels and a link to a note"></td>
   </tr>
 </table>
 
+### Notes, linked to everything
+
+Notes are plain Markdown files that Obsidian, Notion and any editor can read. Formatting shows as you type, the way Obsidian's live preview works: headings, lists, clickable to-dos, quotes and code. Type `/` for commands and `[[` to link a whiteboard, board or note; Kanban cards can link to notes too.
+
+![A note with to-dos and links to a board and whiteboards](docs/images/note.png)
+
 ### Charts, tables and gauges that stay editable
 
-Bar, line, pie and donut charts, tables and percentage gauges are made of real canvas shapes. Edit the data as plain text (or paste cells from a spreadsheet), switch palettes, and resize: the chart lays itself out again.
+Bar, line, pie and donut charts, tables and percentage gauges are made of real canvas shapes. Edit the data in a small spreadsheet (or paste cells from one), switch palettes, and resize: the chart lays itself out again. Duplicates are independent copies.
 
-![A donut chart with its data panel](docs/images/charts.png)
+![A donut chart with its row editor](docs/images/charts.png)
 
 ### Diagrams from text
 
@@ -93,7 +99,7 @@ The interface follows your Windows theme or your choice, with an accent colour o
 
 ## Install
 
-1. Download [`Aven_1.2.1_x64-setup.exe`](https://github.com/Kaylloggs/Aven/releases/latest) from the latest release, or build it yourself (see below).
+1. Download [`Aven_1.3.0_x64-setup.exe`](https://github.com/Kaylloggs/Aven/releases/latest) from the latest release, or build it yourself (see below).
 2. Aven installs per user (no admin rights) into `%LOCALAPPDATA%\Aven` and adds a Start menu entry. WebView2 is installed automatically if missing (it ships with Windows 10 and 11).
 3. On first launch, choose where your workspace folder lives (default `Documents\Aven\My workspace`).
 
@@ -142,7 +148,7 @@ Regenerate brand assets with `npm run brand` (writes `brand/final/`), then `npx 
 ```
 src/                 React + TypeScript frontend
   engine/            document and board formats, charts, gauges, text styles, export, PDF writer
-  features/          editor, boards, home, templates, export & integrations, settings, overlays
+  features/          editor, boards, notes, home, templates, export & integrations, settings, overlays
   platform/          typed bridge to the Rust backend (+ browser mock)
   store/             Zustand stores (settings, workspace, UI)
 src-tauri/           Rust backend (Tauri 2): storage, backups, SQLite index, integrations

@@ -13,6 +13,7 @@ import type { AvenDocument, ComponentDef, DrawingLink, LayerState, SavedAppState
 import { backgroundFor, inferStyle, type CanvasStyle } from "@/engine/canvasStyle";
 import { chartIdsIn, rebuildChart } from "@/engine/charts";
 import { gaugeData, gaugeIdsIn, layoutGauge } from "@/engine/gauge";
+import { separateDuplicates } from "@/engine/generated";
 import { useSettings } from "@/store/settings";
 import { projectFor, useWorkspace } from "@/store/workspace";
 import { toast } from "@/store/ui";
@@ -142,6 +143,7 @@ export class EditorSession {
   }
 
   private primed = false;
+  private repairedOnLoad = false;
 
   attach(a: ExcalidrawImperativeAPI) {
     this.api = a;
@@ -179,11 +181,27 @@ export class EditorSession {
     if (idle && !this.applyingLayers && this.doc.layers && layersActive()) this.reconcileLayers(els);
 
     const key = this.keyFor(els, a, files);
+    // A duplicated gauge or chart must not share its data with the original.
+    if (idle && key !== this.contentKey) {
+      const separated = separateDuplicates(els);
+      if (separated) {
+        this.api.updateScene({ elements: separated, captureUpdate: CaptureUpdateAction.NEVER });
+        if (!this.primed) {
+          // repaired while loading: the next change primes the session, then saves the repair
+          this.repairedOnLoad = true;
+          return;
+        }
+      }
+    }
     if (!this.primed) {
       // the first change is the engine loading the document, not an edit
       if (!els.length && this.doc.scene.elements.length) return;
       this.primed = true;
       this.contentKey = key;
+      if (this.repairedOnLoad) {
+        this.repairedOnLoad = false;
+        this.markDirty();
+      }
       // refresh thumbnail + search index for files created or imported elsewhere
       this.afterSave(this.buildDocument());
       return;

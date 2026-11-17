@@ -2,7 +2,7 @@
 
 ## Automated tests
 
-### Rust backend (`cd src-tauri && cargo test`) — 17 tests, all passing
+### Rust backend (`cd src-tauri && cargo test`) — 18 tests, all passing
 
 | Area | Tests |
 |---|---|
@@ -12,8 +12,9 @@
 | Backups (`backup`) | workspace snapshot zip, rotation, restore into a new folder, caches excluded, restore never overwrites, backup folder inside workspace content refused; recovery files write/list/read/clear |
 | Index (`db`) | FTS prefix and accent-insensitive search, re-index replaces entries, unsafe queries; recents and path re-pointing after moves; links and backlinks |
 | Integrations | Obsidian vault detection from `obsidian.json`; PKCE challenge format |
+| Notes | `.md` files listed as notes (not assets), read and saved as plain text (an empty new note opens) with `.md` backups, invalid JSON still refused for drawings, duplicated byte for byte, trashed as notes |
 
-### Frontend (`npm test`, Vitest + jsdom) — 63 tests, all passing
+### Frontend (`npm test`, Vitest + jsdom) — 69 tests, all passing
 
 | Area | Tests |
 |---|---|
@@ -30,6 +31,8 @@
 | Charts and tables | data on the box, rebuild from data and after resize, all six kinds, closed pie slices, row and table parsing |
 | Text styles | targets (texts and labels), toggle on/off, underline and strike geometry |
 | Diagrams from text | outline parsing (bullets, spaces, tabs), every layout with valid arrow bindings, Mermaid detection |
+| Duplicated gauges and charts | a copy gets its own id and its parts go back on its own track; charts keep box and parts per copy; scenes without copies untouched |
+| Note links | `[[link]]`, alias and heading forms; closest-title resolution; stable backup keys |
 | Workspace flows (browser backend) | create project, drawing, folder; move; trash and restore; archive |
 
 ## Manual testing done
@@ -110,6 +113,21 @@ Test hygiene: these checks run against the real `%APPDATA%pp.aven.desktop`. Bac
 | Empty canvas right-click shows Aven's menu, the engine menu stays hidden; Select all selects the drawing | PASS |
 | Shape right-click selects it and shows Aven's menu; Duplicate, Lock/Unlock and Delete act on the selection | PASS |
 | Plain interface right-click: browser menu suppressed | PASS |
+
+## 1.3.0 checks (dev build in headless Chrome, real mouse and keyboard events, mock backend, 2026-11-17)
+
+41 checks, all passing on two consecutive runs (the browser backend now refuses non-JSON drawings like the native one, so notes are read through the same rule):
+
+| Area | Checks |
+|---|---|
+| Home | only "From a template" and "New project" tiles; New menu (Whiteboard, Kanban board, Note) with no submenu, Note reachable after hovering every item; Import menu (whiteboards, project); a submenu at the right edge opens on the left |
+| Notes | title selected on a new note, renaming the `.md` file; heading, checkbox, hidden bold marks, `[[link]]` chip; `/` commands; `[[` lists documents; checkbox click toggles `[x]`; saved as plain Markdown; text right-click menu; clicking `[[Roadmap]]` opens the whiteboard |
+| Whiteboard | 7 rail buttons; no grid/snap buttons in the top bar; Shapes button picks the rectangle, second click lists variants, Ellipse switches tool; Insert menu content |
+| Gauges | duplicate (Ctrl+D) gets its own id; editing the copy leaves the original at its value; each label stays on its gauge |
+| Charts | one row per bar; typing a value updates the chart; Enter on the last row adds and focuses a row; table grid; adding a column widens every row |
+| Menus | short empty-canvas menu; element menu with More; no icon column |
+| Style panel | hidden when only a gauge is selected, shown for a rectangle (separate check) |
+| Kanban | card picker lists whiteboards and notes; the card shows the linked note; opening it opens the note; home lists notes |
 
 ## Manual test plan (release checklist)
 

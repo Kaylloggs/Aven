@@ -15,13 +15,9 @@ import {
   Loader2,
   MoreHorizontal,
   NotebookPen,
-  Pencil,
   Plus,
   Search,
-  Tag,
   Trash2,
-  ArrowRightLeft,
-  ExternalLink,
   TriangleAlert,
   X,
 } from "lucide-react";
@@ -187,10 +183,10 @@ function ColumnView({ col, filter, onOpenCard }: { col: BoardColumn; filter: (c:
   const menu = (el: HTMLElement) => openMenuAt(el, menuItems());
 
   const cardMenu = (c: BoardCard): MenuItem[] => [
-    { label: "Open", icon: <ExternalLink className="size-4" />, onSelect: () => onOpenCard(c.id) },
+    { label: "Open", onSelect: () => onOpenCard(c.id) },
     {
       label: "Rename…",
-      icon: <Pencil className="size-4" />,
+     
       onSelect: async () => {
         const t = await askText({ title: "Rename card", initial: c.title, confirmLabel: "Rename" });
         if (t?.trim()) change((b) => updateCard(b, c.id, { title: t.trim() }));
@@ -198,7 +194,7 @@ function ColumnView({ col, filter, onOpenCard }: { col: BoardColumn; filter: (c:
     },
     {
       label: "Move to",
-      icon: <ArrowRightLeft className="size-4" />,
+     
       submenu: board.columns.map((other) => ({
         label: other.title,
         checked: other.id === col.id,
@@ -207,7 +203,7 @@ function ColumnView({ col, filter, onOpenCard }: { col: BoardColumn; filter: (c:
     },
     {
       label: "Labels",
-      icon: <Tag className="size-4" />,
+     
       disabled: board.labels.length === 0,
       submenu: board.labels.map((l) => {
         const on = c.labels.includes(l.id);
@@ -404,8 +400,8 @@ function Board() {
   const backgroundMenu = (e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest("section, button")) return;
     openContextMenu(e, [
-      { label: "Add column", icon: <Plus className="size-4" />, onSelect: () => change((b) => addColumn(b)) },
-      { label: "Rename board…", icon: <Pencil className="size-4" />, onSelect: () => void rename() },
+      { label: "Add column", onSelect: () => change((b) => addColumn(b)) },
+      { label: "Rename board…", onSelect: () => void rename() },
       "separator",
       ...exportItems(),
     ]);

@@ -15,10 +15,9 @@ import {
   Layers,
   LayoutTemplate,
   Loader2,
-  Magnet,
   Maximize2,
   MoreHorizontal,
-  Eye,
+  SlidersHorizontal,
   Puzzle,
   Redo2,
   Ruler,
@@ -230,16 +229,9 @@ export function TopBar() {
       </div>
       <div className="flex-1" />
       <div className="island pointer-events-auto flex h-11 items-center gap-1 px-1.5 anim-fade">
-      <IconButton label="Canvas and view" onClick={(e) => canvasMenu(e.currentTarget)}>
-        <Eye className="size-4" />
+      <IconButton label="Canvas, grid and view" onClick={(e) => canvasMenu(e.currentTarget)}>
+        <SlidersHorizontal className="size-4" />
       </IconButton>
-      <IconButton label="Snap to objects" shortcut="Alt+S" active={snap} onClick={() => setApp({ objectsSnapModeEnabled: !snap })}>
-        <Magnet className="size-4" />
-      </IconButton>
-      <IconButton label="Grid" shortcut="Mod+'" active={grid} onClick={() => setApp({ gridModeEnabled: !grid })}>
-        <Grid3x3 className="size-4" />
-      </IconButton>
-      <div className="mx-1 h-5 w-px bg-border" />
       {adv.layers && (
         <IconButton label="Layers" shortcut="Alt+L" active={layersOpen} onClick={() => useEditor.setState({ layersOpen: !layersOpen })}>
           <Layers className="size-4" />
