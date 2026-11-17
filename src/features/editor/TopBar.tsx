@@ -39,7 +39,8 @@ import { useAdvanced, useEditor } from "./session";
 import { redo, undo } from "./tools";
 import { BackupsDialog } from "./BackupsDialog";
 import { saveAsTemplate } from "@/features/templates/templateActions";
-import { CANVAS_STYLES } from "@/components/CanvasStylePicker";
+import { canvasStyleItems } from "@/components/CanvasStylePicker";
+import { resolvedTheme, useSettings as useSettingsTB } from "@/store/settings";
 
 
 function SaveStatus() {
@@ -135,13 +136,8 @@ export function TopBar() {
 
   const canvasMenu = (el: HTMLElement) =>
     openMenuAt(el, [
-      { heading: "Canvas background" },
-      ...CANVAS_STYLES.map((c) => ({
-        label: c.label,
-        hint: c.value === "dots" ? "default" : undefined,
-        checked: canvasStyle === c.value,
-        onSelect: () => useEditor.getState().session?.setCanvasStyle(c.value),
-      })),
+      { heading: "Background" },
+      ...canvasStyleItems(canvasStyle, resolvedTheme(useSettingsTB.getState().settings.appearance.theme), (v) => useEditor.getState().session?.setCanvasStyle(v)),
       "separator",
       { label: "Grid", checked: grid, shortcut: "Mod+'", onSelect: () => setApp({ gridModeEnabled: !grid }) },
       {

@@ -47,6 +47,10 @@ export interface EditorUIState {
   canvasStyle: CanvasStyle;
   /** increments whenever the drawing content changes (cheap signal for panels) */
   sceneTick: number;
+  /** scroll and zoom, so floating bars can follow the selected object */
+  view: { scrollX: number; scrollY: number; zoom: number; offsetLeft: number; offsetTop: number };
+  /** true while shapes are being dragged, resized or rotated (floating bars step aside) */
+  busy: boolean;
 }
 
 export const useEditor = create<EditorUIState>(() => ({
@@ -73,6 +77,8 @@ export const useEditor = create<EditorUIState>(() => ({
   background: "#ffffff",
   canvasStyle: "dots",
   sceneTick: 0,
+  view: { scrollX: 0, scrollY: 0, zoom: 1, offsetLeft: 0, offsetTop: 0 },
+  busy: false,
 }));
 
 const set = useEditor.setState;
@@ -163,6 +169,11 @@ export class EditorSession {
     const sel = Object.keys(a.selectedElementIds).filter((k) => a.selectedElementIds[k]);
     if (sel.length !== st.selection.length || sel.some((id, i) => st.selection[i] !== id)) set({ selection: sel });
     if (a.zoom.value !== st.zoom) set({ zoom: a.zoom.value });
+    const v = st.view;
+    if (v.scrollX !== a.scrollX || v.scrollY !== a.scrollY || v.zoom !== a.zoom.value || v.offsetLeft !== a.offsetLeft || v.offsetTop !== a.offsetTop)
+      set({ view: { scrollX: a.scrollX, scrollY: a.scrollY, zoom: a.zoom.value, offsetLeft: a.offsetLeft, offsetTop: a.offsetTop } });
+    const busy = !!(a.selectedElementsAreBeingDragged || a.isResizing || a.isRotating || a.editingTextElement);
+    if (busy !== st.busy) set({ busy });
     if (a.viewModeEnabled !== st.viewMode || a.zenModeEnabled !== st.zenMode || a.gridModeEnabled !== st.gridMode || a.objectsSnapModeEnabled !== st.snapMode || a.viewBackgroundColor !== st.background)
       set({ viewMode: a.viewModeEnabled, zenMode: a.zenModeEnabled, gridMode: a.gridModeEnabled, snapMode: a.objectsSnapModeEnabled, background: a.viewBackgroundColor });
 

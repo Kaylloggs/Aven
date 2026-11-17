@@ -12,7 +12,7 @@ export const AVEN_LINK_PREFIX = "aven://drawing/";
 export interface SavedAppState {
   viewBackgroundColor: string;
   /** Aven canvas look: dotted texture (default), off-white paper or dark */
-  canvasStyle?: "dots" | "paper" | "dark";
+  canvasStyle?: "light" | "dark" | "light-dots" | "dark-dots" | "dots" | "paper";
   gridSize: number;
   gridStep: number;
   gridModeEnabled: boolean;

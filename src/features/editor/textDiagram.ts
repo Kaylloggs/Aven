@@ -15,7 +15,9 @@ export function parseOutline(src: string): OutlineNode[] {
   const stack: { indent: number; node: OutlineNode }[] = [];
   for (const raw of src.replace(/\t/g, "    ").split(/\r?\n/)) {
     if (!raw.trim() || /^\s*(#|\/\/)/.test(raw) && !/^\s*#\s/.test(raw)) continue;
-    const indent = raw.match(/^\s*/)![0].length;
+    // a bullet counts as one more level, so "Title" followed by "- item" nests the item
+    const bullet = /^\s*([-*+•]|\d+[.)])\s+/.test(raw);
+    const indent = raw.match(/^\s*/)![0].length + (bullet ? 1 : 0);
     let text = raw.trim().replace(/^([-*+•]|\d+[.)]|#+)\s+/, "").trim();
     if (!text) continue;
     if (text.length > 80) text = `${text.slice(0, 79)}…`;
@@ -154,4 +156,44 @@ export function outlineToBoard(nodes: OutlineNode[], layout: OutlineLayout, hand
 
 export function looksLikeMermaid(src: string): boolean {
   return /^\s*(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|mindmap|timeline|gitGraph)\b/m.test(src);
+}
+
+// ------------------------------------------------------------------ editing the outline text
+
+export interface TextEdit {
+  value: string;
+  start: number;
+  end: number;
+}
+
+const lineStart = (v: string, pos: number) => v.lastIndexOf("\n", pos - 1) + 1;
+
+/** Indent (dir 1) or outdent (dir -1) every line touched by the selection, by two spaces. */
+export function shiftLines(v: string, start: number, end: number, dir: 1 | -1): TextEdit {
+  const from = lineStart(v, start);
+  const to = end > start && v[end - 1] === "\n" ? end - 1 : end;
+  const lines = v.slice(from, to).split("\n");
+  let first = 0;
+  let total = 0;
+  const next = lines.map((l, i) => {
+    const delta = dir === 1 ? 2 : -(l.startsWith("  ") ? 2 : l.startsWith(" ") ? 1 : 0);
+    if (i === 0) first = delta;
+    total += delta;
+    return dir === 1 ? `  ${l}` : l.slice(-delta);
+  });
+  return { value: v.slice(0, from) + next.join("\n") + v.slice(to), start: Math.max(from, start + first), end: Math.max(from, end + total) };
+}
+
+/** Enter keeps the line's indentation and its dash (or number); on an empty item it ends the list. */
+export function continueLine(v: string, pos: number): TextEdit {
+  const from = lineStart(v, pos);
+  const line = v.slice(from, pos);
+  const m = /^(\s*)(?:([-*+•])|(\d+)([.)]))?\s*/.exec(line)!;
+  if ((m[2] || m[3]) && line.trim() === m[0].trim()) {
+    // "  - " with nothing after it: drop the marker instead of adding a line
+    return { value: v.slice(0, from) + v.slice(pos), start: from, end: from };
+  }
+  const marker = m[2] ? `${m[2]} ` : m[3] ? `${Number(m[3]) + 1}${m[4]} ` : "";
+  const insert = `\n${m[1]}${marker}`;
+  return { value: v.slice(0, pos) + insert + v.slice(pos), start: pos + insert.length, end: pos + insert.length };
 }

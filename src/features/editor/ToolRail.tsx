@@ -1,4 +1,11 @@
 import {
+  ChartColumn,
+  Frame,
+  Gauge,
+  ImagePlus,
+  Link2,
+  ListTree,
+  Table2,
   ArrowLeftRight,
   ArrowRight,
   Circle,
@@ -9,7 +16,6 @@ import {
   Minus,
   MousePointer2,
   Pencil,
-  Plus,
   Presentation,
   RectangleHorizontal,
   Square,
@@ -20,13 +26,14 @@ import { useState } from "react";
 import { IconButton } from "@/components/ui";
 import { openMenuAt, type MenuItem } from "@/components/Menu";
 import { useSettings } from "@/store/settings";
-import { useUI } from "@/store/ui";
+import { askText, toast, useUI } from "@/store/ui";
+import { insertLink, pickImages } from "./media";
 import { bindingFor } from "@/features/shortcuts/registry";
 import { cx } from "@/lib/utils";
 import { useEditor } from "./session";
 import { displayTool, setTool } from "./tools";
 import { insertGauge } from "./GaugePanel";
-import { CHART_KINDS, insertChart } from "./ChartPanel";
+import { insertChart } from "./ChartPanel";
 
 interface ToolDef {
   id: string;
@@ -40,6 +47,8 @@ const ic = (C: React.ComponentType<{ className?: string }>) => <C className="siz
 const SELECT: ToolDef = { id: "tool.selection", tool: "selection", label: "Select", icon: ic(MousePointer2) };
 const HAND: ToolDef = { id: "tool.hand", tool: "hand", label: "Hand", icon: ic(Hand) };
 const TEXT: ToolDef = { id: "tool.text", tool: "text", label: "Text", icon: ic(Type) };
+const IMAGE: ToolDef = { id: "tool.image", tool: "image", label: "Insert image", icon: ic(ImagePlus) };
+const FRAME: ToolDef = { id: "tool.frame", tool: "frame", label: "Frame", icon: ic(Frame) };
 
 /** Tools that do the same kind of job share one button; it remembers the last one used. */
 const SLOTS: { id: string; label: string; tools: ToolDef[] }[] = [
@@ -113,16 +122,6 @@ export function ToolRail() {
     }
   };
 
-  const insertMenu = (el: HTMLElement) =>
-    openMenuAt(el, [
-      { label: "Image", shortcut: bindingFor("tool.image", shortcuts) || undefined, onSelect: () => setTool(apiOf(), "image") },
-      { label: "Frame", shortcut: bindingFor("tool.frame", shortcuts) || undefined, onSelect: () => setTool(apiOf(), "frame") },
-      "separator",
-      { label: "Diagram from text…", shortcut: bindingFor("editor.textDiagram", shortcuts) || undefined, onSelect: () => useUI.getState().setOverlay({ kind: "textDiagram" }) },
-      { label: "Chart or table", submenu: CHART_KINDS.map((k) => ({ label: k.label, onSelect: () => insertChart(apiOf(), k.value) })) },
-      { label: "Percentage gauge", shortcut: bindingFor("editor.insertGauge", shortcuts) || undefined, onSelect: () => insertGauge(apiOf()) },
-    ]);
-
   if (zen) return null;
 
   const plain = (t: ToolDef) => (
@@ -140,19 +139,25 @@ export function ToolRail() {
   );
 
   return (
-    <nav aria-label="Drawing tools" className="island absolute left-3 top-[68px] z-30 flex w-[52px] flex-col items-center gap-0.5 py-2 anim-fade">
+    <nav aria-label="Drawing tools" className="island absolute left-3 top-1/2 z-30 flex max-h-[calc(100%-140px)] w-[52px] -translate-y-1/2 flex-col items-center gap-0.5 overflow-y-auto py-2 anim-fade [scrollbar-width:none]">
       {plain(SELECT)}
       {plain(HAND)}
       <span aria-hidden className="my-1.5 h-px w-5 rounded-full bg-border" />
       {SLOTS.map((slot) => {
         const on = slot.tools.find((t) => t.tool === active);
         const current = on ?? slot.tools.find((t) => t.tool === remembered[slot.id]) ?? slot.tools[0];
+        // opens beside the rail and closes by itself when the pointer moves away
         const menu = (el: HTMLElement) =>
-          openMenuAt(el, [
-            ...slot.tools.map<MenuItem>((t) => ({ label: t.label, icon: t.icon, shortcut: keyOf(t), onSelect: () => pick(slot.id, t) })),
-            "separator",
-            { label: "Keep tool active", checked: locked, shortcut: "Q", onSelect: toggleToolLock },
-          ]);
+          openMenuAt(
+            el,
+            [
+              ...slot.tools.map<MenuItem>((t) => ({ label: t.label, icon: t.icon, shortcut: keyOf(t), onSelect: () => pick(slot.id, t) })),
+              "separator",
+              { label: "Keep tool active", checked: locked, shortcut: "Q", onSelect: toggleToolLock },
+            ],
+            "start",
+            { side: "right", closeOnLeave: true },
+          );
         return (
           <IconButton
             key={slot.id}
@@ -176,9 +181,37 @@ export function ToolRail() {
         );
       })}
       {plain(TEXT)}
+      <IconButton label="Images (pick several, or drop them on the canvas)" shortcut={keyOf(IMAGE)} tipSide="right" onClick={() => pickImages(apiOf())}>
+        {IMAGE.icon}
+      </IconButton>
+      <IconButton
+        label="Link or video"
+        tipSide="right"
+        onClick={async () => {
+          const url = await askText({
+            title: "Add a link or a video",
+            label: "YouTube, Vimeo, Figma and a few others play inside the canvas; other sites become a link card.",
+            placeholder: "https://",
+            confirmLabel: "Add",
+          });
+          if (url && !insertLink(apiOf(), url)) toast({ kind: "warning", title: "This does not look like a web link", message: "Paste an address starting with https://" });
+        }}
+      >
+        <Link2 className="size-[18px]" />
+      </IconButton>
+      {plain(FRAME)}
       <span aria-hidden className="my-1.5 h-px w-5 rounded-full bg-border" />
-      <IconButton label="Insert image, frame, diagram, chart or gauge" tipSide="right" aria-haspopup="menu" active={active === "image" || active === "frame"} onClick={(e) => insertMenu(e.currentTarget)}>
-        <Plus className="size-[18px]" />
+      <IconButton label="Diagram from text" shortcut={bindingFor("editor.textDiagram", shortcuts) || undefined} tipSide="right" onClick={() => useUI.getState().setOverlay({ kind: "textDiagram" })}>
+        <ListTree className="size-[18px]" />
+      </IconButton>
+      <IconButton label="Chart (change its type in its panel)" tipSide="right" onClick={() => insertChart(apiOf(), "bar")}>
+        <ChartColumn className="size-[18px]" />
+      </IconButton>
+      <IconButton label="Table" tipSide="right" onClick={() => insertChart(apiOf(), "table")}>
+        <Table2 className="size-[18px]" />
+      </IconButton>
+      <IconButton label="Percentage gauge" shortcut={bindingFor("editor.insertGauge", shortcuts) || undefined} tipSide="right" onClick={() => insertGauge(apiOf())}>
+        <Gauge className="size-[18px]" />
       </IconButton>
     </nav>
   );

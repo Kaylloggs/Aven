@@ -6,6 +6,7 @@ import { hasStyle, styleTargets, toggleTextStyle, type TextStyleKey } from "@/en
 import { chartIdsIn } from "@/engine/charts";
 import { IconButton } from "@/components/ui";
 import { useEditor } from "./session";
+import { FloatingBar } from "./FloatingBar";
 
 /** Apply a text style to the current selection (used by the toolbar and Ctrl+B/I/U). */
 export function applyTextStyle(key: TextStyleKey): boolean {
@@ -44,12 +45,12 @@ export function TextStylePanel() {
   }, [selection, session, tick]);
   if (!state) return null;
   return (
-    <div role="toolbar" aria-label="Text style" className="island pointer-events-auto absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-0.5 px-1.5 py-1 anim-pop">
+    <FloatingBar label="Text style" role="toolbar">
       {BUTTONS.map((b) => (
         <IconButton key={b.key} label={b.label} shortcut={b.shortcut} tipSide="top" active={state[b.key]} onClick={() => applyTextStyle(b.key)}>
           {b.icon}
         </IconButton>
       ))}
-    </div>
+    </FloatingBar>
   );
 }

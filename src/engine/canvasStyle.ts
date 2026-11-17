@@ -1,22 +1,43 @@
-// The three canvas looks Aven offers. Stored per drawing in `scene.appState.canvasStyle`.
-//  - dots:  the app's dotted texture (follows the interface theme); the engine background is transparent
-//  - paper: off-white sheet
-//  - dark:  dark sheet (engine dark theme, which inverts a white background on screen)
-export type CanvasStyle = "dots" | "paper" | "dark";
+// Canvas background, stored per drawing in `scene.appState.canvasStyle`: a tone (light or dark)
+// with or without the dotted texture. Values written by older versions are still read:
+//  - "dots":  dots in the interface theme's tone
+//  - "paper": the light sheet
+//  - "dark":  the dark sheet
+// With dots the engine background is transparent and the app draws the texture behind it; without
+// dots the light sheet is off-white and the dark sheet uses the engine's dark theme (which inverts
+// a white background on screen).
+export type CanvasTone = "light" | "dark";
+export type CanvasStyle = "light" | "dark" | "light-dots" | "dark-dots" | "dots" | "paper";
 
 export const PAPER_COLOR = "#f8f7f4";
 export const EXPORT_FALLBACK_BG = "#ffffff";
 
-export function backgroundFor(style: CanvasStyle): string {
-  return style === "dots" ? "transparent" : style === "paper" ? PAPER_COLOR : "#ffffff";
+export function hasDots(style: CanvasStyle): boolean {
+  return style === "dots" || style.endsWith("-dots");
 }
 
-export function themeFor(style: CanvasStyle, appTheme: "light" | "dark"): "light" | "dark" {
-  return style === "dots" ? appTheme : style === "dark" ? "dark" : "light";
+export function canvasTone(style: CanvasStyle, appTheme: CanvasTone): CanvasTone {
+  if (style === "dots") return appTheme;
+  return style === "paper" || style.startsWith("light") ? "light" : "dark";
 }
+
+export function makeStyle(tone: CanvasTone, dots: boolean): CanvasStyle {
+  return dots ? (`${tone}-dots` as CanvasStyle) : tone;
+}
+
+export function backgroundFor(style: CanvasStyle): string {
+  if (hasDots(style)) return "transparent";
+  return style === "paper" || style === "light" ? PAPER_COLOR : "#ffffff";
+}
+
+export function themeFor(style: CanvasStyle, appTheme: CanvasTone): CanvasTone {
+  return canvasTone(style, appTheme);
+}
+
+const KNOWN = new Set<string>(["light", "dark", "light-dots", "dark-dots", "dots", "paper"]);
 
 export function inferStyle(appState: { canvasStyle?: string; viewBackgroundColor?: string }): CanvasStyle {
-  if (appState.canvasStyle === "dots" || appState.canvasStyle === "paper" || appState.canvasStyle === "dark") return appState.canvasStyle;
+  if (appState.canvasStyle && KNOWN.has(appState.canvasStyle)) return appState.canvasStyle as CanvasStyle;
   return !appState.viewBackgroundColor || appState.viewBackgroundColor === "transparent" ? "dots" : "paper";
 }
 

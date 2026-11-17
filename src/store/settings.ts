@@ -13,7 +13,7 @@ export interface Settings {
     accent: Accent;
     density: "comfortable" | "compact";
     /** default look of new drawings */
-    canvasStyle: "dots" | "paper" | "dark";
+    canvasStyle: "light" | "dark" | "light-dots" | "dark-dots" | "dots" | "paper";
     /** @deprecated kept for old settings files */
     canvasTheme?: "app" | "light" | "dark";
     /** @deprecated kept for old settings files */
@@ -99,7 +99,7 @@ export const DEFAULT_SETTINGS: Settings = {
     defaultTool: "selection",
     shortcuts: {},
   },
-  advanced: { enabled: false, layers: true, components: true, instanceUpdates: "ask" },
+  advanced: { enabled: true, layers: true, components: true, instanceUpdates: "ask" },
   export: {
     defaultFormat: "png",
     defaultScale: 2,

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AlertTriangle, ArrowLeft, Check, ChevronRight, CloudOff, Link2, Loader2, MoreHorizontal, TriangleAlert } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Check, ChevronRight, CloudOff, Loader2, MoreHorizontal, TriangleAlert } from "lucide-react";
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
 import { api, openExternal, revealInExplorer } from "@/platform/api";
@@ -13,6 +13,9 @@ import { dirname, join } from "@/lib/path";
 import { errorMessage, timeAgo } from "@/lib/utils";
 import { closeEditorIfOpen } from "@/features/commands";
 import { liveMarkdown, type LinkCandidate } from "./liveMarkdown";
+import { activeState, insertLink, wordCount, type ActiveState } from "./noteCommands";
+import { NoteToolbar } from "./NoteToolbar";
+import { PROJECT_COLORS } from "@/components/ui";
 import { resolveLink } from "./links";
 import { noteTitle, useNote } from "./noteStore";
 
@@ -57,6 +60,9 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(noteTitle(path));
   const [picker, setPicker] = useState(false);
+  const [fmt, setFmt] = useState<ActiveState>(() => activeState(EditorState.create({ doc: initial })));
+  const words = useNote((s) => wordCount(s.text));
+  const lastSaved = useNote((s) => s.lastSavedAt);
   const tree = useWorkspace((s) => s.tree);
   const project = projectFor(tree, path);
   const ob = useSettings((s) => s.settings.export.obsidian);
@@ -79,6 +85,8 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
             else void followLink(decodeURIComponent(href).replace(/\.md$/i, ""));
           },
           onChange: (text) => useNote.getState().change(text),
+          onState: setFmt,
+          linkKind: (t) => resolveLink(useWorkspace.getState().tree, t, useNote.getState().path)?.kind ?? null,
         }),
       }),
     });
@@ -107,15 +115,6 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
       setTitle(current);
       toast({ kind: "error", title: "Could not rename the note", message: errorMessage(e) });
     }
-  };
-
-  const insertLink = (docTitle: string) => {
-    const v = viewRef.current;
-    if (!v) return;
-    const { from, to } = v.state.selection.main;
-    const insert = `[[${docTitle}]]`;
-    v.dispatch({ changes: { from, to, insert }, selection: { anchor: from + insert.length } });
-    v.focus();
   };
 
   const moreMenu = (el: HTMLElement) =>
@@ -162,16 +161,19 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
         </div>
         <div className="flex-1" />
         <div className="island pointer-events-auto flex h-11 items-center gap-1 px-1.5">
-          <Button size="sm" variant="ghost" icon={<Link2 className="size-3.5" />} onClick={() => setPicker(true)}>
-            Link
-          </Button>
           <IconButton label="Note options" onClick={(e) => moreMenu(e.currentTarget)}>
             <MoreHorizontal className="size-4" />
           </IconButton>
         </div>
       </header>
+      <div className="pointer-events-none absolute left-3 top-1/2 z-30 flex -translate-y-1/2 anim-fade">
+        <NoteToolbar view={() => viewRef.current} state={fmt} onLink={() => setPicker(true)} />
+      </div>
       <main className="absolute inset-0 overflow-y-auto pt-[72px]">
-        <article className="note-page mx-auto mb-24 min-h-[calc(100%-96px)] w-[min(760px,calc(100%-32px))] rounded-2xl border border-border bg-surface px-[clamp(20px,6vw,72px)] pb-24 pt-14 shadow-[var(--shadow-sm)]">
+        <article
+          style={{ ["--fold" as any]: project ? PROJECT_COLORS[project.meta.color] : "var(--facet-violet)" }}
+          className="note-page fold mx-auto mb-24 min-h-[calc(100%-96px)] w-[min(760px,calc(100%-32px))] overflow-hidden rounded-2xl border border-border bg-surface px-[clamp(20px,6vw,72px)] pb-24 pt-14 shadow-[var(--shadow-sm)]"
+        >
           <input
             ref={titleRef}
             value={title}
@@ -187,8 +189,17 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
             }}
             placeholder="Untitled"
             aria-label="Note title"
-            className="font-display mb-4 w-full bg-transparent text-[2.25rem] font-[700] leading-tight tracking-[-0.02em] text-text outline-none placeholder:text-faint"
+            className="font-display w-full bg-transparent text-[2.25rem] font-[700] leading-tight tracking-[-0.02em] text-text outline-none placeholder:text-faint"
           />
+          <p className="mb-7 mt-1.5 flex flex-wrap items-center gap-x-2 text-xs text-faint">
+            <span>{project?.meta.name ?? "Drawings"}</span>
+            <span aria-hidden>·</span>
+            <span>Edited {timeAgo(lastSaved || Date.now())}</span>
+            <span aria-hidden>·</span>
+            <span>
+              {words} word{words === 1 ? "" : "s"}
+            </span>
+          </p>
           <div ref={host} className="note-editor" />
         </article>
       </main>
@@ -200,7 +211,7 @@ function NoteEditor({ path, initial }: { path: string; initial: string }) {
         onClose={() => setPicker(false)}
         onPick={(d) => {
           setPicker(false);
-          insertLink(d.title);
+          if (viewRef.current) insertLink(viewRef.current, d.title);
         }}
       />
     </div>

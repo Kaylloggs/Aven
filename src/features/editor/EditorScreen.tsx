@@ -14,13 +14,16 @@ import { basename, join } from "@/lib/path";
 import { debounce, errorMessage, formatDateTime, timeAgo } from "@/lib/utils";
 import { EditorSession, layersActive, useEditor } from "./session";
 import { finishPresetShape } from "./tools";
-import { dotSpacing, themeFor } from "@/engine/canvasStyle";
+import { installImageDrop } from "./media";
+import { canvasTone, dotSpacing, hasDots, themeFor } from "@/engine/canvasStyle";
 import { TopBar } from "./TopBar";
 import { ToolRail } from "./ToolRail";
 import { RightDock } from "./RightDock";
 import { GaugePanel } from "./GaugePanel";
 import { ChartPanel } from "./ChartPanel";
 import { TextStylePanel } from "./TextStylePanel";
+import { TableCellEditor } from "./TableCellEditor";
+import { DiagramBar } from "./DiagramBar";
 
 type LoadState =
   | { kind: "loading" }
@@ -162,6 +165,7 @@ function Editor({ path, doc, modified, dirtyAtStart }: { path: string; doc: Aven
   const session = sessionRef.current;
   const conflict = useEditor((s) => s.saveState === "conflict");
   const canvasStyle = useEditor((s) => s.canvasStyle);
+  const appThemePref = useSettings((s) => s.settings.appearance.theme);
   // Gauges and charts have their own panel; the engine's style panel would only add noise
   // (and its changes are overwritten when they are rebuilt from their data).
   const generatedOnly = useEditor((s) => {
@@ -213,9 +217,20 @@ function Editor({ path, doc, modified, dirtyAtStart }: { path: string; doc: Aven
     [session, dirtyAtStart, doc],
   );
 
+  // several images dropped at once land in a tidy grid where they were dropped
+  useEffect(() => {
+    const host = canvasHost.current;
+    if (!host) return;
+    return installImageDrop(host, () => session.api);
+  }, [session]);
+
   return (
     <div className="relative h-full overflow-hidden bg-canvas">
-      <div ref={canvasHost} className={`absolute inset-0 aven-canvas ${canvasStyle === "dots" ? "canvas-dots" : ""} ${generatedOnly ? "generated-selected" : ""}`}>
+      <div
+        ref={canvasHost}
+        data-tone={canvasTone(canvasStyle, resolvedTheme(appThemePref))}
+        className={`absolute inset-0 aven-canvas ${hasDots(canvasStyle) ? "canvas-dots" : ""} ${generatedOnly ? "generated-selected" : ""}`}
+      >
         <Canvas doc={doc} onReady={onReady} onChange={session.onChange} />
       </div>
       <TopBar />
@@ -246,6 +261,8 @@ function Editor({ path, doc, modified, dirtyAtStart }: { path: string; doc: Aven
       <GaugePanel />
       <ChartPanel />
       <TextStylePanel />
+      <TableCellEditor host={canvasHost} />
+      <DiagramBar />
     </div>
   );
 }

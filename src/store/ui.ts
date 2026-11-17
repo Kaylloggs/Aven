@@ -38,7 +38,7 @@ export type Overlay =
   | { kind: "export"; tab?: "file" | "obsidian" | "notion" | "gdrive"; path?: string }
   | { kind: "about" }
   | { kind: "guides"; tab?: "obsidian" | "notion" | "gdrive" }
-  | { kind: "textDiagram" }
+  | { kind: "textDiagram"; edit?: { id: string; source: string; mode: string; handDrawn: boolean } }
   | null;
 
 interface UIStore {

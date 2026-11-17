@@ -470,3 +470,208 @@ dialog::backdrop {
 .aven-canvas.generated-selected .excalidraw .App-menu__left {
   display: none;
 }
+
+/* ------------------------------------------------------------------ colour pickers (style panel)
+   One row of round swatches, then a colour ring that opens the full palette. The palette keeps
+   its colours and the hex field; shades and keyboard hint letters are left out. */
+.aven-canvas .excalidraw .color-picker-container > div[style*="width: 1px"] {
+  display: none;
+}
+.aven-canvas .excalidraw .color-picker__top-picks {
+  gap: 6px;
+}
+.aven-canvas .excalidraw .color-picker__top-picks .color-picker__button,
+.aven-canvas .excalidraw .color-picker__button.active-color {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+}
+.aven-canvas .excalidraw .color-picker__top-picks .color-picker__button .color-picker__button-outline,
+.aven-canvas .excalidraw .color-picker__button.active-color .color-picker__button-outline {
+  border-radius: 999px;
+}
+.aven-canvas .excalidraw .color-picker__button.active-color {
+  position: relative;
+  margin-left: 4px;
+  background: conic-gradient(#f76046, #f5ae39, #2fb27e, #22b8cf, #567bf7, #8e5be8, #e64980, #f76046) !important;
+}
+.aven-canvas .excalidraw .color-picker__button.active-color::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 999px;
+  background: var(--swatch-color, transparent);
+  box-shadow: 0 0 0 2px var(--raised);
+}
+.aven-canvas .excalidraw .color-picker__button__hotkey-label {
+  display: none;
+}
+.aven-canvas .excalidraw .color-picker-content > div:has(> .shades),
+.aven-canvas .excalidraw .color-picker-content > div:has(.color-picker__button--no-focus-visible) {
+  display: none;
+}
+
+/* ------------------------------------------------------------------ notes: reading comfort and details */
+.note-editor .cm-editor {
+  font-size: 16.5px;
+}
+.note-editor .cm-scroller {
+  line-height: 1.75;
+}
+/* to-dos: a soft square that fills with the accent colour */
+.note-editor .md-task {
+  appearance: none;
+  position: relative;
+  display: inline-block;
+  vertical-align: -0.17em;
+  width: 1.05em;
+  height: 1.05em;
+  border: 1.5px solid var(--border-strong);
+  border-radius: 5px;
+  background: var(--surface);
+  transition: background-color 120ms var(--ease-out-quart), border-color 120ms var(--ease-out-quart);
+}
+.note-editor .md-task:hover {
+  border-color: var(--accent);
+}
+.note-editor .md-task:checked {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.note-editor .md-task:checked::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 45%;
+  width: 0.55em;
+  height: 0.28em;
+  border: 2px solid var(--on-accent);
+  border-top: 0;
+  border-right: 0;
+  transform: translate(-50%, -50%) rotate(-45deg);
+}
+/* links: an icon tells what they open; a link to a page that does not exist yet is dashed */
+.note-editor .md-wikilink::before {
+  content: "";
+  display: inline-block;
+  width: 0.85em;
+  height: 0.85em;
+  margin-right: 0.3em;
+  vertical-align: -0.1em;
+  background: currentColor;
+  -webkit-mask: var(--link-icon) center / contain no-repeat;
+  mask: var(--link-icon) center / contain no-repeat;
+}
+.note-editor .md-wikilink--drawing {
+  --link-icon: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M8.3%2010a.7.7%200%200%201-.626-1.079L11.4%203a.7.7%200%200%201%201.198-.043L16.3%208.9a.7.7%200%200%201-.572%201.1Z'/%3E%3Crect%20x='3'%20y='14'%20width='7'%20height='7'%20rx='1'/%3E%3Ccircle%20cx='17.5'%20cy='17.5'%20r='3.5'/%3E%3C/svg%3E");
+}
+.note-editor .md-wikilink--board {
+  --link-icon: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M6%205v11'/%3E%3Cpath%20d='M12%205v6'/%3E%3Cpath%20d='M18%205v14'/%3E%3C/svg%3E");
+}
+.note-editor .md-wikilink--note {
+  --link-icon: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Crect%20width='16'%20height='20'%20x='4'%20y='2'%20rx='2'/%3E%3Cpath%20d='M2%206h4'/%3E%3Cpath%20d='M2%2010h4'/%3E%3Cpath%20d='M2%2014h4'/%3E%3Cpath%20d='M2%2018h4'/%3E%3Cpath%20d='M9.5%208h5'/%3E%3Cpath%20d='M9.5%2012H16'/%3E%3Cpath%20d='M9.5%2016H14'/%3E%3C/svg%3E");
+}
+.note-editor .md-wikilink--missing {
+  --link-icon: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2024%2024'%20fill='none'%20stroke='black'%20stroke-width='2'%20stroke-linecap='round'%20stroke-linejoin='round'%3E%3Cpath%20d='M5%2012h14'/%3E%3Cpath%20d='M12%205v14'/%3E%3C/svg%3E");
+}
+.note-editor .md-wikilink--missing {
+  color: var(--text-muted);
+  background: transparent;
+  outline: 1px dashed var(--border-strong);
+  outline-offset: -1px;
+}
+/* tables read as a light grid */
+.note-editor .md-table {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: var(--surface-2);
+  padding: 0 0.9em;
+}
+.note-editor .md-table-first { border-radius: 8px 8px 0 0; padding-top: 0.35em; }
+.note-editor .md-table-last { border-radius: 0 0 8px 8px; padding-bottom: 0.35em; }
+
+/* canvas tone: the dotted texture follows the drawing's light or dark choice, not the interface */
+.aven-canvas[data-tone="dark"] {
+  --dot: oklch(0.32 0.014 280);
+  --canvas-bg: oklch(0.145 0.012 280);
+}
+.aven-canvas[data-tone="light"] {
+  --dot: oklch(0.83 0.008 280);
+  --canvas-bg: oklch(0.975 0.004 90);
+}
+
+/* ------------------------------------------------------------------ "/" menu and [[ suggestions */
+.note-editor .cm-tooltip.md-complete {
+  border-radius: 12px;
+  padding: 0;
+}
+.note-editor .md-complete > ul {
+  min-width: 300px;
+  max-height: 340px !important;
+  padding: 6px !important;
+}
+.note-editor .md-complete completion-section {
+  display: block;
+  padding: 8px 8px 4px;
+  border: 0;
+  color: var(--text-faint);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+.note-editor .md-complete > ul > li.md-opt {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 10px;
+  padding: 6px 8px;
+  border-radius: 8px;
+}
+.note-editor .md-opt-icon {
+  grid-row: 1 / span 2;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-muted);
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 700;
+}
+.note-editor .md-opt-icon svg {
+  width: 17px;
+  height: 17px;
+}
+.note-editor .md-complete > ul > li.md-opt .cm-completionLabel {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+.note-editor .md-complete > ul > li.md-opt .cm-completionDetail {
+  grid-column: 2;
+  margin: 0;
+  font-size: 12px;
+  font-style: normal;
+  color: var(--text-faint);
+}
+.note-editor .md-complete > ul > li.md-opt[aria-selected] {
+  background: var(--hover);
+}
+.note-editor .md-complete > ul > li.md-opt[aria-selected] .md-opt-icon {
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+/* the "/" menu uses the app's type, not the editor's monospace fallback */
+.note-editor .cm-tooltip.md-complete > ul,
+.note-editor .cm-tooltip.md-complete > ul > li {
+  font-family: var(--font-sans) !important;
+}
+.note-editor .cm-tooltip.md-complete completion-section {
+  border-bottom: 0 !important;
+}

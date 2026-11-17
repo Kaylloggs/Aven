@@ -6,6 +6,7 @@ import { createGauge, GAUGE_COLORS, gaugeData, gaugeIdsIn, restyleGauge, setGaug
 import { Segmented } from "@/components/ui";
 import { cx } from "@/lib/utils";
 import { useEditor } from "./session";
+import { BarSep, FloatingBar } from "./FloatingBar";
 
 /** Insert a new gauge at the centre of the visible canvas and select it. */
 export function insertGauge(api: ExcalidrawImperativeAPI | null, style: GaugeStyle = "bar") {
@@ -47,10 +48,11 @@ export function GaugePanel() {
     });
 
   return (
-    <div role="group" aria-label="Gauge" className="island pointer-events-auto absolute bottom-3 left-1/2 z-30 flex -translate-x-1/2 items-center gap-3 px-3 py-2 anim-pop">
-      <span className="flex items-center gap-1.5 text-xs font-[600] text-muted">
+    <FloatingBar label="Gauge">
+      <span className="flex items-center gap-1.5 px-1 text-xs font-[600] text-muted">
         <GaugeIcon className="size-4" /> Gauge{info.ids.length > 1 ? `s (${info.ids.length})` : ""}
       </span>
+      <BarSep />
       <input
         type="range"
         min={0}
@@ -106,6 +108,6 @@ export function GaugePanel() {
           ]}
         />
       )}
-    </div>
+    </FloatingBar>
   );
 }

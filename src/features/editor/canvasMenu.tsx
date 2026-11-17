@@ -3,7 +3,8 @@
 // engine's real actions through their keyboard shortcuts and clipboard events.
 import { CaptureUpdateAction } from "@excalidraw/excalidraw";
 import { openContextMenu, type MenuItem } from "@/components/Menu";
-import { CANVAS_STYLES } from "@/components/CanvasStylePicker";
+import { canvasStyleItems } from "@/components/CanvasStylePicker";
+import { resolvedTheme, useSettings } from "@/store/settings";
 import { toast, useUI } from "@/store/ui";
 import { CHART_KINDS, insertChart } from "./ChartPanel";
 import { insertGauge } from "./GaugePanel";
@@ -119,7 +120,7 @@ function canvasItems(x: number, y: number): MenuItem[] {
         { label: "Grid", checked: grid, shortcut: "Mod+'", onSelect: () => api?.updateScene({ appState: { gridModeEnabled: !grid } as any, captureUpdate: CaptureUpdateAction.NEVER }) },
         "separator",
         { heading: "Background" },
-        ...CANVAS_STYLES.map((c) => ({ label: c.label, checked: style === c.value, onSelect: () => useEditor.getState().session?.setCanvasStyle(c.value) })),
+        ...canvasStyleItems(style, resolvedTheme(useSettings.getState().settings.appearance.theme), (v) => useEditor.getState().session?.setCanvasStyle(v)),
       ],
     },
   ];

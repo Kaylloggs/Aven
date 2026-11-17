@@ -20,7 +20,15 @@ export interface ChartData {
   palette: string[];
   showValues: boolean;
   unit: string;
+  /** table look: header colour ("none" for a plain header), stripes, grid lines, text size */
+  header?: string;
+  stripes?: boolean;
+  lines?: boolean;
+  textSize?: TableTextSize;
 }
+
+export type TableTextSize = "s" | "m" | "l";
+export const TABLE_HEADERS = ["#567BF7", "#F76046", "#2FB27E", "#8E5BE8", "#F5AE39", "#495057", "none"];
 
 export interface ChartRef {
   chartId: string;
@@ -57,6 +65,10 @@ export function defaultChartData(kind: ChartKind): ChartData {
     palette: CHART_PALETTE,
     showValues: true,
     unit: "",
+    header: "#567BF7",
+    stripes: true,
+    lines: true,
+    textSize: "m",
   };
 }
 
@@ -175,6 +187,140 @@ export interface Box {
   height: number;
 }
 
+// ------------------------------------------------------------------ tables
+
+const TEXT_SIZE: Record<TableTextSize, number> = { s: 13, m: 16, l: 20 };
+const CELL_PAD_X = 10;
+const CELL_PAD_Y = 7;
+const charW = (size: number) => size * 0.56;
+
+/** Break a cell's text into lines that fit `width` (words first, long words cut). */
+export function wrapText(t: string, width: number, size: number): string[] {
+  const max = Math.max(1, Math.floor(width / charW(size)));
+  const out: string[] = [];
+  for (const para of String(t).split(/\r?\n/)) {
+    let line = "";
+    for (const word of para.split(/\s+/).filter(Boolean)) {
+      let w = word;
+      while (w.length > max) {
+        if (line) {
+          out.push(line);
+          line = "";
+        }
+        out.push(w.slice(0, max));
+        w = w.slice(max);
+      }
+      if (!line) line = w;
+      else if (line.length + 1 + w.length <= max) line += ` ${w}`;
+      else {
+        out.push(line);
+        line = w;
+      }
+    }
+    out.push(line);
+  }
+  return out.length ? out : [""];
+}
+
+export interface TableCell {
+  r: number;
+  c: number;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  lines: string[];
+  size: number;
+}
+
+/**
+ * Where every cell of a table goes for a box width. Every column is at least as wide as its
+ * longest word (words are never cut), the rest of the width follows how much text each column
+ * holds, and the table widens when its words need more room than the box has. Rows grow with
+ * wrapped text.
+ */
+export function tableLayout(box: { x: number; y: number; width: number }, d: ChartData): { cells: TableCell[]; height: number; width: number } {
+  const t = d.table.length ? d.table : [[""]];
+  const cols = Math.max(1, ...t.map((r) => r.length));
+  const size = TEXT_SIZE[d.textSize ?? "m"];
+  // the header row is bold, and bold letters are wider
+  const BOLD = 1.12;
+  const cw = (r: number) => charW(size) * (r === 0 ? BOLD : 1);
+  const cellText = (r: string[], c: number) => String(r[c] ?? "");
+  const longestWord = Array.from({ length: cols }, (_, c) => Math.max(3 * cw(1), ...t.flatMap((r, ri) => cellText(r, c).split(/\s+/).map((w) => Math.min(w.length, 24) * cw(ri)))));
+  const longestLine = Array.from({ length: cols }, (_, c) => Math.max(3 * cw(1), ...t.flatMap((r, ri) => cellText(r, c).split(/\n/).map((l) => l.length * cw(ri)))));
+  const minW = longestWord.map((w) => w + CELL_PAD_X * 2);
+  const natural = longestLine.map((w) => w + CELL_PAD_X * 2);
+  const needed = minW.reduce((a, b) => a + b, 0);
+  const inner = Math.max(box.width, needed);
+  const extra = natural.map((n, c) => Math.max(0, n - minW[c]));
+  const extraTotal = extra.reduce((a, b) => a + b, 0);
+  const spare = inner - needed;
+  const widths = minW.map((m, c) => m + (extraTotal > 0 ? (extra[c] / extraTotal) * spare : spare / cols));
+  const cells: TableCell[] = [];
+  let y = box.y;
+  t.forEach((row, r) => {
+    const wrapped = widths.map((w, c) => wrapText(cellText(row, c), w - CELL_PAD_X * 2, size * (r === 0 ? BOLD : 1)));
+    const h = Math.max(...wrapped.map((l) => l.length)) * size * 1.25 + CELL_PAD_Y * 2;
+    let x = box.x;
+    widths.forEach((w, c) => {
+      cells.push({ r, c, x, y, w, h, lines: wrapped[c], size });
+      x += w;
+    });
+    y += h;
+  });
+  return { cells, height: y - box.y, width: inner };
+}
+
+/** The cell under a scene point, or null. */
+export function tableCellAt(box: { x: number; y: number; width: number }, d: ChartData, px: number, py: number): TableCell | null {
+  return tableLayout(box, d).cells.find((c) => px >= c.x && px <= c.x + c.w && py >= c.y && py <= c.y + c.h) ?? null;
+}
+
+function tint(hex: string, amount: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const mix = (v: number) => Math.round(v + (255 - v) * amount);
+  return `#${[(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => mix(v).toString(16).padStart(2, "0")).join("")}`;
+}
+
+function tableParts(box: Box, d: ChartData): ExcalidrawElement[] {
+  const parts: ExcalidrawElement[] = [];
+  const header = d.header ?? "#567BF7";
+  const plainHeader = header === "none";
+  const lines = d.lines !== false;
+  const { cells } = tableLayout(box, d);
+  const rowsN = Math.max(...cells.map((c) => c.r)) + 1;
+  for (const cell of cells) {
+    const isHead = cell.r === 0;
+    const fill = isHead ? (plainHeader ? "#f1f3f5" : header) : d.stripes !== false && cell.r % 2 === 0 ? (plainHeader ? "#f8f9fa" : tint(header, 0.9)) : "#ffffff";
+    parts.push(rect(cell.x, cell.y, cell.w, cell.h, fill, lines ? GRID : "transparent"));
+    if (!lines && !isHead && cell.r < rowsN - 1) parts.push(rect(cell.x, cell.y + cell.h - 0.5, cell.w, 1, GRID));
+    const value = cell.lines.join("\n");
+    if (!value.trim()) continue;
+    parts.push(
+      make({
+        type: "text",
+        x: cell.x + CELL_PAD_X,
+        y: cell.y + CELL_PAD_Y,
+        width: cell.w - CELL_PAD_X * 2,
+        height: cell.lines.length * cell.size * 1.25,
+        text: value,
+        originalText: value,
+        fontSize: cell.size,
+        fontFamily: 6,
+        textAlign: "left",
+        verticalAlign: "top",
+        containerId: null,
+        lineHeight: 1.25,
+        autoResize: false,
+        strokeColor: isHead && !plainHeader ? "#ffffff" : INK,
+        customData: isHead ? { avenBold: true } : undefined,
+      }),
+    );
+  }
+  return parts;
+}
+
 /** Build every visual element of a chart inside `box` (the box element itself excluded). */
 export function buildParts(box: Box, d: ChartData): ExcalidrawElement[] {
   const parts: ExcalidrawElement[] = [];
@@ -190,23 +336,7 @@ export function buildParts(box: Box, d: ChartData): ExcalidrawElement[] {
   const rows = d.rows.filter((r) => Number.isFinite(r.value));
   const color = (i: number) => d.palette[i % d.palette.length] ?? CHART_PALETTE[i % CHART_PALETTE.length];
 
-  if (d.kind === "table") {
-    const t = d.table.filter((r) => r.length);
-    const cols = Math.max(1, ...t.map((r) => r.length));
-    const rowsN = Math.max(1, t.length);
-    const cw = (right - left) / cols;
-    const rh = (bottom - top) / rowsN;
-    const size = Math.max(10, Math.min(18, rh * 0.42));
-    t.forEach((row, r) => {
-      for (let c = 0; c < cols; c++) {
-        const x = left + c * cw;
-        const y = top + r * rh;
-        parts.push(rect(x, y, cw, rh, r === 0 ? "#e7f5ff" : r % 2 ? "#ffffff" : "#f8f9fa", GRID));
-        parts.push(text(row[c] ?? "", x + 8, y + rh / 2 - (size * 1.25) / 2, cw - 16, { size, align: "left", bold: r === 0 }));
-      }
-    });
-    return parts;
-  }
+  if (d.kind === "table") return tableParts(box, d);
 
   if (!rows.length) {
     parts.push(text("Add data to draw the chart", left, (top + bottom) / 2 - 10, right - left, { color: MUTED }));
@@ -298,7 +428,7 @@ export function buildParts(box: Box, d: ChartData): ExcalidrawElement[] {
 /** Create a new chart with its top-left corner at (x, y). */
 export function createChart(x: number, y: number, kind: ChartKind, data?: ChartData): ExcalidrawElement[] {
   const d = data ?? defaultChartData(kind);
-  const size = kind === "table" ? { w: 480, h: 200 } : kind === "pie" || kind === "donut" ? { w: 460, h: 280 } : kind === "hbar" ? { w: 440, h: 260 } : { w: 480, h: 300 };
+  const size = kind === "table" ? (({ width, height }) => ({ w: width, h: height }))(tableLayout({ x, y, width: 480 }, d)) : kind === "pie" || kind === "donut" ? { w: 460, h: 280 } : kind === "hbar" ? { w: 440, h: 260 } : { w: 480, h: 300 };
   const chartId = randomId();
   const groupId = randomId();
   const box = make({
@@ -341,6 +471,7 @@ export function rebuildChart(scene: readonly ExcalidrawElement[], chartId: strin
   const groupId = box.groupIds[box.groupIds.length - 1] ?? randomId();
   const newBox = {
     ...box,
+    ...(d.kind === "table" ? (({ height, width }) => ({ height, width }))(tableLayout(box, d)) : {}),
     backgroundColor: d.kind === "table" ? "transparent" : box.backgroundColor === "transparent" ? "#ffffff" : box.backgroundColor,
     strokeColor: d.kind === "table" ? "transparent" : box.strokeColor === "transparent" ? GRID : box.strokeColor,
     customData: { ...customData(box), avenChart: { ...ref, data: d } },

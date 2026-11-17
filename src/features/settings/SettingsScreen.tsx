@@ -24,7 +24,7 @@ import { LogoMark, Wordmark } from "@/components/Logo";
 import { CanvasStylePicker } from "@/components/CanvasStylePicker";
 import { api, isDesktop, openExternal, openPath, pickFile, pickFolder, revealInExplorer } from "@/platform/api";
 import type { AppPaths, SnapshotInfo, StorageUsage } from "@/platform/types";
-import { useSettings, type Accent } from "@/store/settings";
+import { resolvedTheme, useSettings, type Accent } from "@/store/settings";
 import { useWorkspace } from "@/store/workspace";
 import { askConfirm, askText, toast, useUI } from "@/store/ui";
 import { runSnapshotIfDue } from "@/features/maintenance";
@@ -37,7 +37,7 @@ const TABS = [
   { id: "backups", label: "Backups and recovery", icon: <LifeBuoy className="size-4" /> },
   { id: "editor", label: "Editor", icon: <Brush className="size-4" /> },
   { id: "shortcuts", label: "Keyboard shortcuts", icon: <Keyboard className="size-4" /> },
-  { id: "advanced", label: "Advanced editing", icon: <Layers className="size-4" /> },
+  { id: "advanced", label: "Editing mode", icon: <Layers className="size-4" /> },
   { id: "export", label: "Export", icon: <Download className="size-4" /> },
   { id: "integrations", label: "Integrations", icon: <Plug className="size-4" /> },
   { id: "about", label: "About", icon: <Info className="size-4" /> },
@@ -101,8 +101,8 @@ function Appearance() {
         </Field>
       </Section>
       <Section title="Canvas" description="Each drawing keeps its own background; this is the one new drawings start with.">
-        <Field label="Default canvas for new drawings" inline hint="Dots follows the interface theme. Exports always use a clean background.">
-          <CanvasStylePicker value={a.canvasStyle} onChange={(v) => update({ appearance: { canvasStyle: v } })} />
+        <Field label="Default canvas for new drawings" inline hint="Light or dark, with or without dots. Exports always use a clean background.">
+          <CanvasStylePicker value={a.canvasStyle} appTheme={resolvedTheme(a.theme)} onChange={(v) => update({ appearance: { canvasStyle: v } })} />
         </Field>
         <Field label="Show grid in new drawings" inline>
           <Switch label="Show grid" checked={a.showGrid} onChange={(v) => update({ appearance: { showGrid: v } })} />
@@ -543,10 +543,28 @@ function AdvancedTab() {
   const { settings, update } = useSettings();
   const a = settings.advanced;
   return (
-    <Section title="Advanced Editing Features" description="Layers and reusable components for complex work. When off, the editor stays as simple as a whiteboard; drawings keep their layer and component data either way.">
-      <Field label="Enable advanced editing" inline>
-        <Switch label="Advanced editing" checked={a.enabled} onChange={(v) => update({ advanced: { enabled: v } })} />
-      </Field>
+    <Section title="Editing mode" description="Normal gives you layers and reusable components. Simple keeps the whiteboard as plain as possible. Drawings keep their layers and components either way.">
+      <div className="mb-2 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="Editing mode">
+        {[
+          { on: false, title: "Simple", body: "Just the canvas and its tools. Best for quick sketches." },
+          { on: true, title: "Normal", body: "Adds layers and components for bigger, organised work." },
+        ].map((m) => (
+          <button
+            key={m.title}
+            type="button"
+            role="radio"
+            aria-checked={a.enabled === m.on}
+            onClick={() => update({ advanced: { enabled: m.on } })}
+            className={cx(
+              "rounded-xl border p-4 text-left cursor-pointer transition-colors duration-150",
+              a.enabled === m.on ? "border-accent bg-accent-soft" : "border-border bg-surface-2 hover:border-border-strong",
+            )}
+          >
+            <span className="block font-[650] text-text">{m.title}</span>
+            <span className="mt-1 block text-xs text-muted">{m.body}</span>
+          </button>
+        ))}
+      </div>
       <Field label="Layers" inline hint="Hide, lock, fade, reorder and group sets of shapes.">
         <Switch label="Layers" disabled={!a.enabled} checked={a.layers} onChange={(v) => update({ advanced: { layers: v } })} />
       </Field>

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.3.0-F76046" alt="Version 1.3.0">
+  <img src="https://img.shields.io/badge/version-1.5.0-F76046" alt="Version 1.5.0">
   <img src="https://img.shields.io/badge/platform-Windows%2010%20%7C%2011-567BF7" alt="Windows 10 and 11">
   <img src="https://img.shields.io/badge/works-offline-2FB27E" alt="Works offline">
   <img src="https://img.shields.io/badge/license-MIT-8E5BE8" alt="MIT license">
@@ -25,17 +25,17 @@ Aven pairs an infinite drawing canvas (built on the open-source Excalidraw engin
 
 ### Projects, folders and a home for your work
 
-Workspaces live in folders you pick. Inside them: projects with colours and descriptions, nested folders, favourites, pins, archives, a trash with restore, fast search (Ctrl+P) and a knowledge map of drawings that link to each other.
+Workspaces live in folders you pick. Inside them: projects with colours and descriptions, nested folders, favourites, pins, archives, a trash with restore, fast search (Ctrl+P), and links between whiteboards, boards and notes.
 
 ![A project with its drawings, boards and folders](docs/images/project.png)
 
 ### An infinite canvas
 
-Shapes, arrows, text, images and freehand drawing on an infinite canvas, with optional layers and reusable linked components (Settings › Advanced editing). Rotation snaps back upright, the canvas comes in three looks (dots, off-white, dark), and text can be bold, italic, underlined or struck through.
+Shapes, arrows, text, images and freehand drawing on an infinite canvas, with layers and reusable linked components in Normal mode (or a plain whiteboard in Simple mode). Rotation snaps back upright, the canvas is light or dark with or without dots, and text can be bold, italic, underlined or struck through. Drop several images at once, and paste a YouTube, Vimeo or Figma link to play it right in the canvas.
 
-![The whiteboard with its compact tool rail and the layers panel](docs/images/editor.png)
+![The whiteboard with its tool bar and the layers panel](docs/images/editor.png)
 
-The tool rail stays small: shapes, arrows and drawing tools each share one button that remembers your last choice, and images, frames, diagrams, charts and gauges sit under Insert. Right-click for short, Aven-styled menus.
+The tool bar sits in the middle of the left edge: shapes, arrows and drawing tools each share one button that remembers your last choice, and images, links and videos, frames, diagrams, charts, tables and gauges each have their own. Right-click for short, Aven-styled menus.
 
 ![The short right-click menu on a shape](docs/images/canvas-menu.png)
 
@@ -52,21 +52,31 @@ Boards sit next to drawings in your projects. Drag cards and columns, add checkl
 
 ### Notes, linked to everything
 
-Notes are plain Markdown files that Obsidian, Notion and any editor can read. Formatting shows as you type, the way Obsidian's live preview works: headings, lists, clickable to-dos, quotes and code. Type `/` for commands and `[[` to link a whiteboard, board or note; Kanban cards can link to notes too.
+Notes are plain Markdown files that Obsidian, Notion and any editor can read. Formatting shows as you type, the way Obsidian's live preview works: headings, lists, clickable to-dos, quotes, code and tables. A toolbar on the left formats with one click, `/` opens a menu of blocks, and `[[` links a whiteboard, board or note (the link shows what it opens). Kanban cards can link to notes too.
 
 ![A note with to-dos and links to a board and whiteboards](docs/images/note.png)
 
-### Charts, tables and gauges that stay editable
+### Tables, charts and gauges, Canva-style
 
-Bar, line, pie and donut charts, tables and percentage gauges are made of real canvas shapes. Edit the data in a small spreadsheet (or paste cells from one), switch palettes, and resize: the chart lays itself out again. Duplicates are independent copies.
+Select a table, chart, gauge, diagram or text and its controls appear in a small bar right above it. Double-click a table cell to type in it: text wraps, words are never cut, and the table grows with its content. Pick a header colour, stripes, lines and text size in one click. Charts (bar, line, pie, donut) take their data from a small spreadsheet, or cells pasted from one. Everything is made of real canvas shapes, and duplicates are independent copies.
 
-![A donut chart with its row editor](docs/images/charts.png)
+<table>
+  <tr>
+    <td><img src="docs/images/table.png" alt="A table with its floating style bar"></td>
+    <td><img src="docs/images/charts.png" alt="A donut chart with its floating bar and data panel"></td>
+  </tr>
+</table>
 
 ### Diagrams from text
 
-Type an indented list and get a mind map, org chart, plan or flow. Paste Mermaid code (flowchart, sequence, class) and it becomes editable shapes.
+Type a list with dashes (indent to go deeper) and get a mind map, org chart, plan or flow; a short guide in the dialog shows how. Paste Mermaid code (flowchart, sequence, class) and it becomes editable shapes. The diagram stays one object: switch its layout or edit its text later, and it redraws in place.
 
-![Diagram from text: an outline turned into a mind map](docs/images/text-diagram.png)
+<table>
+  <tr>
+    <td><img src="docs/images/text-diagram.png" alt="Diagram from text: an outline with its guide and preview"></td>
+    <td><img src="docs/images/diagram.png" alt="An inserted mind map with its layout bar"></td>
+  </tr>
+</table>
 
 ### 40 templates
 
@@ -99,7 +109,7 @@ The interface follows your Windows theme or your choice, with an accent colour o
 
 ## Install
 
-1. Download [`Aven_1.3.0_x64-setup.exe`](https://github.com/Kaylloggs/Aven/releases/latest) from the latest release, or build it yourself (see below).
+1. Download [`Aven_1.5.0_x64-setup.exe`](https://github.com/Kaylloggs/Aven/releases/latest) from the latest release, or build it yourself (see below).
 2. Aven installs per user (no admin rights) into `%LOCALAPPDATA%\Aven` and adds a Start menu entry. WebView2 is installed automatically if missing (it ships with Windows 10 and 11).
 3. On first launch, choose where your workspace folder lives (default `Documents\Aven\My workspace`).
 

@@ -1,5 +1,39 @@
 # Changelog
 
+## 1.5.0 — 2026-11-17
+
+### Added
+- **Canva-style object bars**: selecting a table, chart, gauge, diagram or text shows a small bar right above it with its controls; it follows scrolling and zooming and steps aside while you move the object.
+- **Tables you edit on the canvas**: double-click a cell to type (Enter goes down, Tab to the next cell, Escape cancels). Columns share the width by content and never cut a word, text wraps and rows grow, and the table widens when it needs room. Styles: header colour (or a plain header), striped rows, cell lines, and small, medium or large text. The data panel opens from the bar when you want the spreadsheet view.
+- **Diagrams from text stay editable as one object**: switch between mind map, org chart, plan and flow, toggle the hand-drawn style, or edit the text, and the diagram redraws in place.
+- **Several images at once**: the Images button takes several files, and images dropped on the canvas land in a tidy grid where you drop them. Very large photos are scaled down.
+- **Links and videos**: paste a YouTube, Vimeo, Figma (and a few other) link to play it inside the canvas; any other site becomes a link card that opens in the browser.
+
+### Changed
+- The whiteboard tool bar is centred vertically on the left, and the note toolbar is a vertical bar on the left as well.
+- The "/" menu in notes is grouped (Text, Lists, Blocks, Links) with an icon and a short description for each command; link suggestions show what they open.
+- Canvas background: light or dark, with dots on or off (instead of three fixed looks). Older drawings open as they were.
+- Editing mode: a choice between Simple and Normal (layers and components). Normal is the default.
+- The sidebar no longer shows Recent, Drawings and Knowledge map (recent work is on Home; loose drawings are reached from a drawing's breadcrumb).
+
+### Fixed
+- Table cells no longer cut their text with "…", and a table no longer squeezes its rows when resized.
+- Copies of a diagram from text are independent, like gauges and charts.
+
+
+## 1.4.0 — 2026-11-17
+
+### Added
+- **Note toolbar**: a text style menu (text, heading 1 to 3), bold, italic, strikethrough, inline code, bulleted, numbered and to-do lists, quote, code block, table, divider and link. Buttons light up for the formatting under the cursor and keep the cursor where it was. Shortcuts: Ctrl+Alt+0 to 3 for text and headings, Ctrl+Shift+7/8/9 for numbered, bulleted and to-do lists.
+- Notes look better: link chips show whether they open a whiteboard, a board or a note, and a link to a page that does not exist yet is dashed; rounded to-do boxes; tables read as a grid; a line under the title shows the project, the last edit and the word count; slightly larger reading type.
+- Aven reopens with the window size, position and maximized state it had when it was closed.
+
+### Changed
+- **Whiteboard tools**: image, frame, diagram from text, chart, table and gauge have their own buttons in the rail again (no more "+" list). Shapes, arrows and drawing tools stay grouped; their variants open beside the rail and close as soon as the pointer moves away.
+- **Colour pickers**: round swatches without the separator; a colour ring opens the palette, which keeps the colours and the hex code but no longer shows shades and key hints.
+- **Diagram from text**: the examples are written with dashes, a "How it works" panel explains the first line, the dash and the indentation, and Indent and Outdent buttons help. Tab and Shift+Tab indent whole lines, Enter starts the next line with the same dash, and a "- item" written under a title line is nested under it.
+
+
 ## 1.3.0 — 2026-11-17
 
 ### Added

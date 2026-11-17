@@ -15,7 +15,10 @@ Status legend: **Done** (implemented and exercised), **Partial** (works with a d
 | Freehand, eraser, text, image | Done | P, E, T, 9 |
 | Laser pointer, frame | Done | K, F |
 | Keep tool active | Done | Q, or in the variants of the Shapes, Arrows and Draw buttons |
-| Compact tool rail | Done | 7 buttons: Select, Hand, Shapes, Arrows and lines, Draw (pen, eraser, laser), Text, Insert; grouped buttons remember the last tool used |
+| Tool rail | Done | Centred on the left: Select, Hand, Shapes, Arrows and lines, Draw (pen, eraser, laser), Text, Images, Link or video, Frame, Diagram from text, Chart, Table, Gauge; grouped buttons remember the last tool, their variants open beside the rail and close when the pointer leaves |
+| Object bars | Done | A floating bar above the selected table, chart, gauge, diagram or text, hidden while dragging |
+| Several images at once, drag and drop | Done | Grid layout, large photos scaled down (verified in the UI) |
+| Links and videos | Done | YouTube, Vimeo, Figma and other supported services play in the canvas; other sites become link cards (UT for link checks) |
 | Percentage gauge (bar or ring) | Done | Insert menu; select a gauge to set value, colour and style; copies are independent (UT) |
 
 ## Object manipulation
@@ -53,8 +56,8 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 | Feature | Status | Notes |
 |---|---|---|
 | Bar, horizontal bar, line, pie, donut charts | Done | Editable shapes; data edited in a row editor (label, value); palettes and unit in the chart menu; re-layout after resize; copies are independent (UT) |
-| Tables | Done | Edited as a grid (add or remove rows and columns); paste cells from a spreadsheet or a Markdown table (UT) |
-| Diagram from text | Done | Indented list to mind map, org chart, plan, flow; Mermaid to shapes (UT for list layouts; Mermaid verified in the UI) |
+| Tables | Done | Double-click a cell to type; words never cut, text wraps, rows grow; header colour, stripes, lines, text size; data panel and spreadsheet paste (UT) |
+| Diagram from text | Done | Indented list to mind map, org chart, plan, flow; Mermaid to shapes; legend, Indent/Outdent, Tab and Enter editing; stays one object: change layout or style, or edit the text (UT for list layouts and editing; Mermaid verified in the UI) |
 
 ## Notes
 
@@ -63,6 +66,8 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 | Notes as plain `.md` files in projects and folders | Done | RT; created from the New menu; title is the file name |
 | Live Markdown (headings, emphasis, lists, to-dos, quotes, code, dividers, links) | Done | Marks shown only on the edited line; verified in the UI |
 | `/` commands and `[[` links to whiteboards, boards and notes | Done | UT for link parsing and resolution; verified in the UI |
+| Formatting toolbar and shortcuts (styles, lists, quote, code, table, divider, link) | Done | UT for block detection; verified in the UI |
+| Link chips by document kind, missing pages dashed; word count | Done | verified in the UI |
 | Autosave, version history, conflict detection, trash, search | Done | same write path as drawings (RT) |
 | Copy for Notion, copy to an Obsidian vault | Done | |
 
@@ -99,7 +104,7 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 
 40 built-in editable templates in five categories (Planning, Thinking, Business, Design & development, Creative), gallery with previews, search, categories, recommended, recently used, favorites, personal templates, save drawing as template, customise a built-in, duplicate, delete, import/export single templates and template packs (`.aventemplates`): **Done** (UT checks all 40 build valid, editable content).
 
-## Advanced Editing Features (optional, Settings › Advanced editing)
+## Normal editing mode (layers and components; Settings › Editing mode, on by default)
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -110,7 +115,7 @@ Engine shortcuts (undo/redo, copy/paste, duplicate, delete, group, select all, z
 
 ## Connected drawings
 
-Links between drawings (Info panel), shape links to drawings, backlinks ("Linked from"), copy a drawing link, knowledge map (force-directed graph of linked drawings, project colours, hover highlight, click to open): **Done**. Links between projects: **Partial** (project metadata stores links; there is no UI to edit them yet).
+Links between drawings (Info panel), shape links to drawings, backlinks ("Linked from"), copy a drawing link: **Done**. The knowledge map (graph of linked drawings) is no longer in the sidebar since 1.5.0. Links between projects: **Partial** (project metadata stores links; there is no UI to edit them yet).
 
 ## Export and integrations
 

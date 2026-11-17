@@ -39,11 +39,17 @@ The hook implementations live in `src/engine/textStyle.ts` and are unit-tested.
 
 ## Notes
 
-Notes are plain Markdown files (`*.md`), listed by the backend in `FolderNode.notes` without being read (title = file name, id derived from the path). They are saved through `drawing_write`, which skips the JSON check for `.md` files, so they get the same atomic writes, version history (backups keep the `.md` extension) and conflict detection. The editor is CodeMirror 6 with a live-preview plugin (`features/notes/liveMarkdown.ts`) that only adds decorations: the document text is never rewritten. `[[Title]]` links resolve by title, closest first (same folder, then same project), in `features/notes/links.ts`.
+Notes are plain Markdown files (`*.md`), listed by the backend in `FolderNode.notes` without being read (title = file name, id derived from the path). They are saved through `drawing_write`, which skips the JSON check for `.md` files, so they get the same atomic writes, version history (backups keep the `.md` extension) and conflict detection. The editor is CodeMirror 6 with a live-preview plugin (`features/notes/liveMarkdown.ts`) that only adds decorations: the document text is never rewritten. `[[Title]]` links resolve by title, closest first (same folder, then same project), in `features/notes/links.ts`. Formatting commands (`features/notes/noteCommands.ts`) only rewrite Markdown text and are shared by the toolbar, the shortcuts and the `/` menu.
+
+The window's size, position and maximized state are kept by `tauri-plugin-window-state` (visibility is not restored, so a first launch is never hidden).
+
+## Object bars
+
+`features/editor/FloatingBar.tsx` places a bar above the selection from the editor store's view state (scroll, zoom, offsets) and hides it while the engine reports a drag, resize, rotation or text edit. Tables, charts, gauges, diagrams and text styles use it. Table cells are edited through an overlay positioned from `tableLayout` (`engine/charts.ts`), opened by a capture-phase double-click listener so the engine does not start editing the cell's text element.
 
 ## Generated content (gauges, charts, diagrams)
 
-Gauges (`engine/gauge.ts`) and charts and tables (`engine/charts.ts`) are groups of ordinary elements tagged in `customData`; copies made by duplicating or pasting get their own id from `engine/generated.ts` (told apart by their group) and are laid out again; the source data lives on one element (gauge track, chart box) and the rest is regenerated from it, also after a resize. Diagrams from text (`features/editor/textDiagram.ts`) use the template Board builder; Mermaid goes through `@excalidraw/mermaid-to-excalidraw`, loaded on demand.
+Gauges (`engine/gauge.ts`) and charts and tables (`engine/charts.ts`) are groups of ordinary elements tagged in `customData`; copies made by duplicating or pasting get their own id from `engine/generated.ts` (elements that share a group belong to the same copy) and are laid out again; diagrams from text keep their source text and layout in `customData.avenDiagram` so they can be redrawn in place; the source data lives on one element (gauge track, chart box) and the rest is regenerated from it, also after a resize. Diagrams from text (`features/editor/textDiagram.ts`) use the template Board builder; Mermaid goes through `@excalidraw/mermaid-to-excalidraw`, loaded on demand.
 
 ## Process model
 

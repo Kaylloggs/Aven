@@ -14,7 +14,7 @@
 | Integrations | Obsidian vault detection from `obsidian.json`; PKCE challenge format |
 | Notes | `.md` files listed as notes (not assets), read and saved as plain text (an empty new note opens) with `.md` backups, invalid JSON still refused for drawings, duplicated byte for byte, trashed as notes |
 
-### Frontend (`npm test`, Vitest + jsdom) — 69 tests, all passing
+### Frontend (`npm test`, Vitest + jsdom) — 79 tests, all passing
 
 | Area | Tests |
 |---|---|
@@ -33,6 +33,9 @@
 | Diagrams from text | outline parsing (bullets, spaces, tabs), every layout with valid arrow bindings, Mermaid detection |
 | Duplicated gauges and charts | a copy gets its own id and its parts go back on its own track; charts keep box and parts per copy; scenes without copies untouched |
 | Note links | `[[link]]`, alias and heading forms; closest-title resolution; stable backup keys |
+| Note formatting | block kind of a line, word count without Markdown marks |
+| Tables and backgrounds | words never cut and the table widens, long text wraps and the row grows, cell under a point; light/dark tone with dots and older values; link checks for embeds |
+| Diagram text editing | dash lines nest under a title, whole-line indent and outdent, Enter continues dashes and numbers and ends an empty item |
 | Workspace flows (browser backend) | create project, drawing, folder; move; trash and restore; archive |
 
 ## Manual testing done
@@ -113,6 +116,33 @@ Test hygiene: these checks run against the real `%APPDATA%pp.aven.desktop`. Bac
 | Empty canvas right-click shows Aven's menu, the engine menu stays hidden; Select all selects the drawing | PASS |
 | Shape right-click selects it and shows Aven's menu; Duplicate, Lock/Unlock and Delete act on the selection | PASS |
 | Plain interface right-click: browser menu suppressed | PASS |
+
+## 1.5.0 checks (dev build in headless Chrome, real mouse and keyboard events, mock backend, 2026-11-17)
+
+30 new checks plus the 28 of 1.4.0 and the 41 of 1.3.0, all passing:
+
+| Area | Checks |
+|---|---|
+| Home and settings | no Recent, Drawings or Knowledge map in the sidebar; editing mode Simple / Normal with Normal on by default |
+| Whiteboard | tool bar centred vertically; background menu Light / Dark / Dots; light with dots, then dots off keeps the light sheet |
+| Images and links | three dropped images all inserted side by side; Images button; a YouTube link becomes an embedded video; another site becomes a link card |
+| Tables | tools float above the table; data panel closed by default; header colour, stripes and text size apply; double-click opens a cell, Enter saves and moves down; long text wraps and the table grows; no cut text |
+| Charts, gauges | chart tools above the chart with its data panel open; Data closes it; gauge controls float |
+| Diagrams | inserted diagram is one object with its bar; changing the layout redraws it in place; Edit text reopens the dialog with its text; a duplicate gets its own identity |
+| Notes | toolbar vertical on the left and centred; "/" menu with sections, icons and descriptions |
+
+## 1.4.0 checks (dev build in headless Chrome, real mouse and keyboard events, mock backend, 2026-11-17)
+
+28 new checks plus the 41 checks of 1.3.0, all passing on two consecutive runs:
+
+| Area | Checks |
+|---|---|
+| Diagram from text | example written with dashes; legend explains first line, dash and indentation (shown as dots); Enter repeats the dash; Tab indents the whole line; Enter on an empty item ends it; the preview builds from the typed outline |
+| Tool rail | 12 direct buttons; right-click on a grouped tool opens its variants beside the rail; the menu stays while the pointer is on it and closes when it leaves; Table button inserts a table |
+| Colour picker | round swatches; separator hidden; the palette opens without shades or key hints |
+| Note toolbar | 13 controls; Bold lights up inside bold text and removes the marks; Italic wraps a selection; text style menu sets Heading 2 and follows the cursor; To-do toggles on and off; Ctrl+Alt+1 makes a heading; link chips know their kind and mark missing pages; Table inserts a Markdown table; Link opens the picker; word count shown |
+
+The window size and maximized state are handled by the Tauri window-state plugin; this needs the desktop app and was not checked in the browser build.
 
 ## 1.3.0 checks (dev build in headless Chrome, real mouse and keyboard events, mock backend, 2026-11-17)
 

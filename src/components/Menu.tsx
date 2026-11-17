@@ -29,7 +29,7 @@ export interface MenuSwatch {
 }
 
 interface MenuState {
-  open: { x: number; y: number; items: MenuItem[]; anchor?: DOMRect; minWidth?: number } | null;
+  open: { x: number; y: number; items: MenuItem[]; anchor?: DOMRect; minWidth?: number; closeOnLeave?: boolean } | null;
   show: (o: MenuState["open"]) => void;
   close: () => void;
 }
@@ -40,10 +40,29 @@ export const useMenuStore = create<MenuState>((set) => ({
   close: () => set({ open: null }),
 }));
 
-/** Open a menu below an element (dropdown) */
-export function openMenuAt(el: HTMLElement, items: MenuItem[], align: "start" | "end" = "start") {
+export interface MenuOptions {
+  /** "right" opens beside the element (toolbar flyouts) instead of below it */
+  side?: "below" | "right";
+  /** close as soon as the pointer leaves the menu and its button */
+  closeOnLeave?: boolean;
+}
+
+/** Open a menu below (or beside) an element */
+export function openMenuAt(el: HTMLElement, items: MenuItem[], align: "start" | "end" = "start", opts: MenuOptions = {}) {
   const r = el.getBoundingClientRect();
-  useMenuStore.getState().show({ x: align === "start" ? r.left : r.right, y: r.bottom + 4, items, anchor: r, minWidth: align === "end" ? -1 : r.width });
+  if (opts.side === "right") {
+    useMenuStore.getState().show({ x: r.right + 14, y: r.top - 4, items, anchor: r, closeOnLeave: opts.closeOnLeave });
+    return;
+  }
+  useMenuStore.getState().show({ x: align === "start" ? r.left : r.right, y: r.bottom + 4, items, anchor: r, minWidth: align === "end" ? -1 : r.width, closeOnLeave: opts.closeOnLeave });
+}
+
+/** True when the point is over an open menu or the button it came from (with a small margin). */
+function nearMenu(x: number, y: number, anchor?: DOMRect) {
+  const m = 10;
+  const inside = (r: DOMRect) => x >= r.left - m && x <= r.right + m && y >= r.top - m && y <= r.bottom + m;
+  if (anchor && inside(anchor)) return true;
+  return [...document.querySelectorAll<HTMLElement>('[role="menu"]')].some((el) => inside(el.getBoundingClientRect()));
 }
 
 /** Open a context menu at the pointer */
@@ -202,14 +221,25 @@ export function MenuHost() {
       if (!(e.target as HTMLElement).closest?.('[role="menu"]')) close();
     };
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && close();
+    // Toolbar flyouts disappear once the pointer has left them for a moment.
+    let leaveTimer: ReturnType<typeof setTimeout> | undefined;
+    const onMove = (e: PointerEvent) => {
+      if (nearMenu(e.clientX, e.clientY, open.anchor)) {
+        clearTimeout(leaveTimer);
+        leaveTimer = undefined;
+      } else if (!leaveTimer) leaveTimer = setTimeout(close, 250);
+    };
     const t = setTimeout(() => {
       window.addEventListener("pointerdown", onDown, true);
       window.addEventListener("keydown", onKey);
       window.addEventListener("blur", close);
       window.addEventListener("resize", close);
+      if (open.closeOnLeave) window.addEventListener("pointermove", onMove);
     });
     return () => {
       clearTimeout(t);
+      clearTimeout(leaveTimer);
+      window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", onDown, true);
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("blur", close);

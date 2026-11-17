@@ -3,14 +3,11 @@ import {
   Archive,
   ChevronDown,
   ChevronRight,
-  Clock,
   Folder,
   FolderOpen,
   HardDrive,
   Home,
-  Inbox,
   LayoutTemplate,
-  Network,
   Pin,
   Plus,
   Search,
@@ -26,7 +23,7 @@ import { IconButton, PROJECT_COLORS } from "@/components/ui";
 import { openContextMenu, openMenuAt } from "@/components/Menu";
 import { pickFolder } from "@/platform/api";
 import type { FolderNode, ProjectNode } from "@/platform/types";
-import { inboxPath, useWorkspace } from "@/store/workspace";
+import { useWorkspace } from "@/store/workspace";
 import { askText, useUI, type HomeSection } from "@/store/ui";
 import { useSettings } from "@/store/settings";
 import { newProject } from "@/features/commands";
@@ -192,11 +189,8 @@ export function Sidebar() {
       </div>
       <nav className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-2" aria-label="Sections">
         <NavItem icon={<Home />} label="Home" tint="var(--facet-coral)" active={section === "home"} onClick={() => go("home")} />
-        <NavItem icon={<Clock />} label="Recent" tint="var(--facet-blue)" active={section === "recent"} onClick={() => go("recent")} />
         <NavItem icon={<Star />} label="Favorites" tint="var(--facet-honey)" active={section === "favorites"} count={favCount} onClick={() => go("favorites")} />
-        <NavItem icon={<Inbox />} label="Drawings" tint="var(--facet-violet)" active={section === "inbox"} count={tree?.inbox.drawings.length} onClick={() => go("inbox")} drop={tree ? inboxPath(tree) : undefined} />
         <NavItem icon={<LayoutTemplate />} label="Templates" tint="var(--facet-green)" onClick={() => useUI.getState().setOverlay({ kind: "templates" })} />
-        <NavItem icon={<Network />} label="Knowledge map" tint="var(--facet-blue)" active={section === "graph"} onClick={() => go("graph")} />
 
         <div className="mt-4 flex items-center justify-between px-2.5 pb-1">
           <span className="font-display text-xs text-muted">Projects</span>

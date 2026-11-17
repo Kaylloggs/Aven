@@ -23,7 +23,11 @@ import {
 } from "@/engine/board";
 import { buildParts, chartBox, chartIdsIn, chartRef, createChart, defaultChartData, parseRows, parseTable, rebuildChart } from "@/engine/charts";
 import { decorationRects, styleTargets, toggleTextStyle, hasStyle } from "@/engine/textStyle";
-import { outlineToBoard, parseOutline, looksLikeMermaid } from "./editor/textDiagram";
+import { continueLine, outlineToBoard, parseOutline, looksLikeMermaid, shiftLines } from "./editor/textDiagram";
+import { blockOf, wordCount } from "./notes/noteCommands";
+import { tableCellAt, tableLayout } from "@/engine/charts";
+import { backgroundFor, canvasTone, hasDots, makeStyle } from "@/engine/canvasStyle";
+import { isEmbeddableUrl, normaliseUrl } from "./editor/urls";
 import { separateDuplicates } from "@/engine/generated";
 import { createGauge, gaugeData, setGaugeValue } from "@/engine/gauge";
 import { noteKey, resolveLink, wikilinkTargets } from "./notes/links";
@@ -298,5 +302,90 @@ describe("note links", () => {
     expect(noteKey("C:/A/Note.md")).toMatch(/^note-[0-9a-f]{8}$/);
     expect(noteKey("C:/A/Note.md")).toBe(noteKey("c:/a/note.md"));
     expect(noteKey("C:/A/Note.md")).not.toBe(noteKey("C:/A/Other.md"));
+  });
+});
+
+describe("diagram from text editing", () => {
+  it("nests dash lines written flush under a title", () => {
+    const t = parseOutline("Trip\n- Paris\n  - Louvre\n- Rome");
+    expect(t).toHaveLength(1);
+    expect(t[0].children.map((c) => c.text)).toEqual(["Paris", "Rome"]);
+    expect(t[0].children[0].children[0].text).toBe("Louvre");
+  });
+
+  it("indents and outdents whole lines", () => {
+    const v = "Root\n- A\n- B";
+    const r = shiftLines(v, 10, 10, 1);
+    expect(r.value).toBe("Root\n- A\n  - B");
+    expect(shiftLines(r.value, r.start, r.end, -1).value).toBe(v);
+    expect(shiftLines(v, 0, v.length, 1).value).toBe("  Root\n  - A\n  - B");
+  });
+
+  it("continues dashes and numbers on Enter, and ends an empty item", () => {
+    expect(continueLine("Root\n  - A", 10).value).toBe("Root\n  - A\n  - ");
+    expect(continueLine("1. One", 6).value).toBe("1. One\n2. ");
+    expect(continueLine("Root\n- ", 7).value).toBe("Root\n");
+  });
+});
+
+describe("note formatting", () => {
+  it("recognises the block kind of a line", () => {
+    expect(blockOf("# Title")).toBe("h1");
+    expect(blockOf("### Small")).toBe("h3");
+    expect(blockOf("  - [x] Done")).toBe("task");
+    expect(blockOf("- item")).toBe("bullet");
+    expect(blockOf("12. item")).toBe("ordered");
+    expect(blockOf("> quote")).toBe("quote");
+    expect(blockOf("Plain #tag")).toBe("p");
+  });
+
+  it("counts words without Markdown marks", () => {
+    expect(wordCount("# Plan\n- [ ] **Book** the venue\n| a | b |")).toBe(6);
+  });
+});
+
+describe("tables on the canvas", () => {
+  const data = (table: string[][], textSize: "s" | "m" | "l" = "m") => ({ ...defaultChartData("table"), table, textSize });
+
+  it("never cuts a word and widens the table when words need room", () => {
+    const d = data([["Owner", "Status"], ["Alexandra", "In progress"]], "l");
+    const layout = tableLayout({ x: 0, y: 0, width: 120 }, d);
+    expect(layout.width).toBeGreaterThan(120);
+    for (const cell of layout.cells) for (const line of cell.lines) expect(["Owner", "Status", "Alexandra", "In", "progress", "In progress"]).toContain(line);
+  });
+
+  it("wraps long text and makes the row taller", () => {
+    const short = tableLayout({ x: 0, y: 0, width: 300 }, data([["Item"], ["Short"]]));
+    const long = tableLayout({ x: 0, y: 0, width: 300 }, data([["Item"], ["A much longer description that has to wrap onto several lines"]]));
+    expect(long.height).toBeGreaterThan(short.height);
+    expect(long.cells[1].lines.length).toBeGreaterThan(1);
+  });
+
+  it("finds the cell under a point", () => {
+    const d = data([["a", "b"], ["c", "d"]]);
+    const layout = tableLayout({ x: 10, y: 20, width: 200 }, d);
+    const target = layout.cells.find((c) => c.r === 1 && c.c === 1)!;
+    expect(tableCellAt({ x: 10, y: 20, width: 200 }, d, target.x + 2, target.y + 2)).toMatchObject({ r: 1, c: 1 });
+    expect(tableCellAt({ x: 10, y: 20, width: 200 }, d, 0, 0)).toBeNull();
+  });
+});
+
+describe("canvas background and links", () => {
+  it("combines a tone with dots on or off, and reads older drawings", () => {
+    expect(makeStyle("light", true)).toBe("light-dots");
+    expect(canvasTone("dark-dots", "light")).toBe("dark");
+    expect(hasDots("light")).toBe(false);
+    expect(canvasTone("dots", "light")).toBe("light"); // older "dots" follows the interface
+    expect(canvasTone("paper", "dark")).toBe("light");
+    expect(backgroundFor("light")).toBe("#f8f7f4");
+    expect(backgroundFor("dark-dots")).toBe("transparent");
+  });
+
+  it("recognises links the canvas can play", () => {
+    expect(normaliseUrl("youtube.com/watch?v=x")).toBe("https://youtube.com/watch?v=x");
+    expect(normaliseUrl("javascript:alert(1)")).toBeNull();
+    expect(isEmbeddableUrl("https://www.youtube.com/watch?v=x")).toBe(true);
+    expect(isEmbeddableUrl("https://vimeo.com/1")).toBe(true);
+    expect(isEmbeddableUrl("https://example.org")).toBe(false);
   });
 });

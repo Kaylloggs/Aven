@@ -6,7 +6,7 @@ The drawing engine is Excalidraw (https://github.com/excalidraw/excalidraw), use
 
 The note editor is built on CodeMirror 6 and Lezer (MIT), listed below.
 
-The desktop shell is built with Tauri (MIT or Apache-2.0) and Rust crates under MIT and/or Apache-2.0 licenses (tauri, serde, rusqlite/SQLite (public domain), zip, keyring, reqwest, tokio, uuid, chrono, walkdir, base64, sha2, url, thiserror).
+The desktop shell is built with Tauri (MIT or Apache-2.0) and Rust crates under MIT and/or Apache-2.0 licenses (tauri, tauri-plugin-window-state, serde, rusqlite/SQLite (public domain), zip, keyring, reqwest, tokio, uuid, chrono, walkdir, base64, sha2, url, thiserror).
 
 ## @excalidraw/excalidraw 0.18.1
 
